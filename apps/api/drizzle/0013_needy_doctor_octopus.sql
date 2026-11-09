@@ -1,0 +1,1 @@
+ALTER TABLE `task_notifications` ADD `due_at` text;

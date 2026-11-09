@@ -1,0 +1,56 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.13.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm test:rotation
+      - run: pnpm --filter @opsdesk/api test:coverage
+      - run: pnpm audit --prod --audit-level high
+      - run: pnpm build
+      - run: pnpm --filter @opsdesk/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @opsdesk/web test:e2e
+      - run: docker build -f infrastructure/Dockerfile --target test -t opsdesk-tests .
+      - run: docker run --rm opsdesk-tests
+      - run: docker compose build
+      - run: docker compose run --rm api node dist/migrate.js
+      - name: Preparar cuenta temporal de pruebas
+        run: |
+          credential="$(openssl rand -hex 24)"
+          echo "::add-mask::$credential"
+          echo "SEED_PASSWORD=$credential" >> "$GITHUB_ENV"
+          echo "PHASE5_E2E=1" >> "$GITHUB_ENV"
+          echo "E2E_ISOLATED=yes" >> "$GITHUB_ENV"
+          echo "E2E_EMAIL=admin@example.test" >> "$GITHUB_ENV"
+          echo "E2E_PASSWORD=$credential" >> "$GITHUB_ENV"
+          echo "APP_ORIGIN=http://127.0.0.1:8080" >> "$GITHUB_ENV"
+          echo "E2E_BASE_URL=http://127.0.0.1:8080" >> "$GITHUB_ENV"
+      - run: docker compose run --rm -e NODE_ENV=development -e SEED_PASSWORD api node dist/seed.js
+      - run: docker compose up -d --wait
+      - run: pnpm --filter @opsdesk/web exec playwright test e2e/phase5.spec.ts e2e/accessibility-work.spec.ts --workers=1
+      - run: pnpm --filter @opsdesk/web test:e2e --grep 'sesión real'
+      - run: pnpm --filter @opsdesk/web test:e2e --grep 'sesión vencida'
+      - run: curl --fail http://127.0.0.1:8080/api/v1/health && curl --fail http://127.0.0.1:8080/
+      - name: Publicar cobertura y resultados de navegador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-de-pruebas
+          path: |
+            apps/api/coverage/
+            apps/web/test-results/
+            apps/web/playwright-report/
+          if-no-files-found: warn
+      - if: always()
+        run: docker compose down --volumes

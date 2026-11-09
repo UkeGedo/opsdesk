@@ -1,0 +1,11 @@
+# Ciclo de vida de tickets
+
+El servicio valida transiciones en `ticket-lifecycle.ts`. Abierto puede pasar a asignado o en proceso; asignado a en proceso; en proceso a pendiente del cliente o resuelto; pendiente del cliente a en proceso o resuelto; resuelto a cerrado o reabierto; cerrado a reabierto; reabierto a asignado o en proceso. Las transiciones operativas requieren técnico activo asignado. Resolver exige solución; cerrar exige solución registrada; reabrir exige motivo. El evento de estado conserva origen, destino y motivo cuando corresponde, junto con actor y fecha; se escribe en la misma transacción que el ticket.
+
+Administrador y supervisor administran tickets; el técnico solo ejecuta las transiciones de trabajo permitidas en sus asignaciones; el cliente crea, consulta y comenta tickets de su organización. La reapertura corresponde a administrador y supervisor y requiere motivo. La actualización y la reasignación requieren la versión `expectedUpdatedAt`; las versiones desactualizadas se rechazan. Las notas internas no se muestran al cliente.
+
+## Asignaciones y notificaciones
+
+`POST /api/v1/tickets/:id/assignment` requiere administrador o supervisor, `technicianId`, `expectedUpdatedAt` y, para reasignar, `reason`. La operación verifica que el técnico esté activo y que el ticket no esté cerrado, resuelto o archivado. El valor `expectedUpdatedAt` debe coincidir con la versión consultada; si no coincide responde `409 STALE_TICKET`. La actualización, el historial, el evento, la auditoría y la notificación se guardan en una transacción. Los cambios de asignación en PATCH se rechazan para impedir que omitan esos registros; los tickets creados con asignación registran también historial y notificación.
+
+`GET /tickets/:id/assignments` requiere permiso de lectura de asignaciones y acceso al ticket. `GET /notifications` devuelve solo notificaciones del usuario cuyo ticket siga autorizado; `POST /notifications/read` marca hasta 100 notificaciones propias y autorizadas. El menú de la interfaz consulta estas notificaciones por HTTP. Socket.IO autentica cada conexión con la sesión y el origen, emite señales sin contenido sensible a usuarios autorizados y fuerza la actualización desde la API al reconectar. Las asignaciones anteriores a esta migración no se reconstruyen: no existe evidencia histórica suficiente para hacerlo.

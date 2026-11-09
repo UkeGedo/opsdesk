@@ -1,0 +1,48 @@
+{
+  "name": "@opsdesk/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run src --configLoader runner",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/migrate.ts",
+    "db:bootstrap": "tsx src/bootstrap.ts",
+    "db:seed": "tsx src/seed.ts",
+    "db:backup": "tsx src/backup.ts",
+    "test:coverage": "vitest run src --coverage --configLoader runner",
+    "perf:smoke": "node scripts/load-test.mjs"
+  },
+  "dependencies": {
+    "argon2": "^0.45.2",
+    "better-sqlite3": "^12.4.0",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "nodemailer": "^10.3.1",
+    "pino": "^9.9.0",
+    "socket.io": "^4.8.4",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/smtp-server": "^3.5.13",
+    "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@vitest/coverage-v8": "5.1.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "drizzle-kit": "^0.31.5",
+    "smtp-server": "^3.21.3",
+    "socket.io-client": "^4.8.4",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.0",
+    "vitest": "^5.1.0"
+  }
+}

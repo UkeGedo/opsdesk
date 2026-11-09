@@ -1,0 +1,22 @@
+{
+  "name": "opsdesk",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "test:rotation": "node --test scripts/rotate-backups.test.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "typescript-eslint": "^8.50.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.0"
+  },
+  "type": "module"
+}

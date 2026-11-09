@@ -1,0 +1,35 @@
+{
+  "name": "@opsdesk/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests --exclude e2e/**",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^7.0.3",
+    "@tailwindcss/vite": "^4.1.0",
+    "@tanstack/react-query": "^5.106.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.91.0",
+    "react-router-dom": "^7.9.0",
+    "recharts": "^3.10.1",
+    "socket.io-client": "^4.8.4",
+    "tailwindcss": "^4.1.0",
+    "vite": "^6.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "vitest": "^5.1.0"
+  }
+}
