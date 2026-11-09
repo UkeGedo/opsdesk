@@ -368,6 +368,43 @@ body {
   gap: 12px;
 }
 .report-controls label,
+.desk-settings {
+  border: 1px solid var(--border, #d3e1df);
+  border-radius: 0.7rem;
+  margin-bottom: 0.6rem;
+  padding: 0.8rem 1rem;
+}
+.desk-settings > summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.desk-settings[open] > summary {
+  margin-bottom: 0.8rem;
+}
+.desk-settings table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.ticket-queues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.ticket-queues button {
+  border: 1px solid var(--border, #d3e1df);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+.work-main .ticket-queues button[aria-pressed='true'] {
+  background: #126c67;
+  border-color: #126c67;
+  color: #fff;
+}
 .table-controls label {
   display: flex;
   flex-direction: column;

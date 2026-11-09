@@ -21,11 +21,17 @@ import {
   events,
   notifications,
   ticketAssignments,
+  services,
+  ticketServiceData,
+  ticketPriorityData,
   tickets,
   users,
 } from '../../schema.js';
 import { UserService } from '../identity/service.js';
 import { escaped, matching, page, result } from '../shared/query.js';
+import { applyPolicy, recordFirstResponse, statusChanged } from '../service-desk/store.js';
+import { priorityFromMatrix, validateForm } from '../service-desk/policies.js';
+import { latestMatrix } from '../service-desk/priority.js';
 function notifyTicket(
   tx: Pick<Db, 'select' | 'insert'>,
   ticket: typeof tickets.$inferSelect,
@@ -160,6 +166,24 @@ export class TicketService {
         throw new ApiError(400, 'INVALID_CUSTOMER', 'El cliente no existe o está inactivo.');
       this.category(v.categoryId);
       this.assignee(v.assignedToUserId);
+      const service = v.serviceId
+        ? tx.select().from(services).where(eq(services.id, v.serviceId)).get()
+        : null;
+      if (v.serviceId && (!service || !service.active || service.categoryId !== v.categoryId))
+        throw new ApiError(
+          400,
+          'INVALID_SERVICE',
+          'El servicio no está disponible para la categoría indicada.',
+        );
+      if (service) {
+        const validation = validateForm(JSON.parse(service.formSchema), v.customFields ?? {});
+        if (!validation.valid)
+          throw new ApiError(
+            400,
+            'INVALID_SERVICE_FIELDS',
+            `Campos del servicio no válidos: ${Object.keys(validation.errors).join(', ')}.`,
+          );
+      }
       const counter = tx
         .insert(counters)
         .values({ name: 'ticket', value: 1 })
@@ -167,10 +191,21 @@ export class TicketService {
         .returning()
         .get();
       const date = now();
+      const { serviceId, requestType, customFields, impact, urgency, ...ticketValues } = v;
+      const matrix = impact && urgency ? latestMatrix(tx) : null;
+      if (impact && urgency && !matrix)
+        throw new ApiError(
+          409,
+          'MATRIX_NOT_CONFIGURED',
+          'No hay una matriz de prioridad configurada.',
+        );
+      const computed =
+        matrix && impact && urgency ? priorityFromMatrix(matrix.matrix, impact, urgency) : null;
       const row = tx
         .insert(tickets)
         .values({
-          ...v,
+          ...ticketValues,
+          ...(computed ? { priority: computed.priority } : {}),
           id: randomUUID(),
           ticketNumber: counter.value,
           createdByUserId: actor,
@@ -180,6 +215,29 @@ export class TicketService {
         })
         .returning()
         .get();
+      if (service && requestType)
+        tx.insert(ticketServiceData)
+          .values({
+            ticketId: row.id,
+            serviceId: service.id,
+            requestType,
+            formSnapshot: service.formSchema,
+            values: JSON.stringify(customFields ?? {}),
+          })
+          .run();
+      if (matrix && computed && impact && urgency)
+        tx.insert(ticketPriorityData)
+          .values({
+            ticketId: row.id,
+            impact,
+            urgency,
+            calculatedPriority: computed.priority,
+            explanation: computed.explanation,
+            matrixVersion: matrix.version,
+            matrixSnapshot: JSON.stringify(matrix.matrix),
+          })
+          .run();
+      applyPolicy(tx, row.id, row.priority, date, serviceId ?? null);
       if (v.assignedToUserId) {
         tx.insert(events)
           .values({
@@ -297,6 +355,7 @@ export class TicketService {
         .returning()
         .get();
       if (!row) throw new ApiError(409, 'STALE_TICKET', 'El ticket cambió; actualiza los datos.');
+      if (v.status) statusChanged(tx, idValue, current.status, v.status, date);
       tx.insert(events)
         .values({
           id: randomUUID(),
@@ -410,12 +469,13 @@ export class TicketService {
         }
       }
       if (t.archivedAt) throw new ApiError(409, 'ARCHIVED', 'El ticket está archivado.');
-      const date = now();
+      const date = new Date(Math.max(Date.now(), Date.parse(t.updatedAt))).toISOString();
       const row = tx
         .insert(comments)
         .values({ ...v, id: randomUUID(), ticketId: idValue, authorId: actor, createdAt: date })
         .returning()
         .get();
+      recordFirstResponse(tx, idValue, actor, v.visibility, date);
       tx.insert(events)
         .values({
           id: randomUUID(),

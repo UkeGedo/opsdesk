@@ -10,6 +10,7 @@ import { attachmentRoutes } from './modules/tickets/attachments.js';
 import { reportRoutes } from './modules/reports/routes.js';
 import { taskRoutes } from './modules/tasks/routes.js';
 import { inventoryRoutes } from './modules/inventory/routes.js';
+import { serviceDeskRoutes, ticketSlaRoute } from './modules/service-desk/routes.js';
 import { Router } from 'express';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -20,6 +21,9 @@ import {
   customerUsers,
   sessions,
   ticketAssignments,
+  ticketServiceData,
+  ticketPriorityData,
+  services,
   tickets,
   tasks,
   users,
@@ -98,6 +102,8 @@ export function routes(
     next();
   });
   router.use('/tickets/:id/attachments', attachmentRoutes(db, attachmentDir));
+  router.use('/tickets/:id/sla', ticketSlaRoute(db));
+  router.use('/service-desk', serviceDeskRoutes(db));
   router.use('/inventory/assets', assetRoutes(db));
   router.use('/inventory', inventoryRoutes(db, domainEvents));
   router.use('/tasks', taskRoutes(db, domainEvents));
@@ -254,6 +260,42 @@ export function routes(
   router.get('/tickets/:id', requirePermission('tickets.read'), (req, res) => {
     const user = res.locals.user as typeof users.$inferSelect;
     res.json({ data: ticketForUser(visibleTicket(db, user, id.parse(req.params.id)), user) });
+  });
+  router.get('/tickets/:id/service', requirePermission('tickets.read'), (req, res) => {
+    const ticketId = id.parse(req.params.id);
+    visibleTicket(db, res.locals.user, ticketId);
+    const row = db
+      .select({ data: ticketServiceData, serviceName: services.name })
+      .from(ticketServiceData)
+      .innerJoin(services, eq(ticketServiceData.serviceId, services.id))
+      .where(eq(ticketServiceData.ticketId, ticketId))
+      .get();
+    res.json({
+      data: row
+        ? {
+            ...row.data,
+            serviceName: row.serviceName,
+            form: JSON.parse(row.data.formSnapshot),
+            values: JSON.parse(row.data.values),
+          }
+        : null,
+    });
+  });
+  router.get('/tickets/:id/priority', requirePermission('tickets.read'), (req, res) => {
+    const ticketId = id.parse(req.params.id);
+    visibleTicket(db, res.locals.user, ticketId);
+    const data = db
+      .select({
+        impact: ticketPriorityData.impact,
+        urgency: ticketPriorityData.urgency,
+        calculatedPriority: ticketPriorityData.calculatedPriority,
+        explanation: ticketPriorityData.explanation,
+        matrixVersion: ticketPriorityData.matrixVersion,
+      })
+      .from(ticketPriorityData)
+      .where(eq(ticketPriorityData.ticketId, ticketId))
+      .get();
+    res.json({ data: data ?? null });
   });
   router.get('/tickets/:id/assignments', requirePermission('assignments.read'), (req, res) => {
     const ticketId = id.parse(req.params.id);

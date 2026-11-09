@@ -90,13 +90,14 @@ export function useTickets(
   assignedTo = '',
   sort = 'createdAt',
   order = 'desc',
+  priority = '',
 ) {
   const { request } = useSession();
   return useQuery({
-    queryKey: ['tickets', query, page, status, assignedTo, sort, order],
+    queryKey: ['tickets', query, page, status, assignedTo, sort, order, priority],
     queryFn: async () =>
       (await request(
-        `/tickets?limit=20&sort=${encodeURIComponent(sort)}&order=${encodeURIComponent(order)}&page=${page}${query ? '&q=' + encodeURIComponent(query) : ''}${status ? '&status=' + encodeURIComponent(status) : ''}${assignedTo ? '&assignedTo=' + encodeURIComponent(assignedTo) : ''}`,
+        `/tickets?limit=20&sort=${encodeURIComponent(sort)}&order=${encodeURIComponent(order)}&page=${page}${query ? '&q=' + encodeURIComponent(query) : ''}${status ? '&status=' + encodeURIComponent(status) : ''}${assignedTo ? '&assignedTo=' + encodeURIComponent(assignedTo) : ''}${priority ? '&priority=' + encodeURIComponent(priority) : ''}`,
       )) as List<Ticket>,
   });
 }

@@ -68,8 +68,18 @@ export const ticketCreate = z
     description: z.string().trim().min(1).max(10000),
     priority,
     assignedToUserId: id.nullable().optional(),
+    serviceId: id.optional(),
+    requestType: z.enum(['incidente', 'solicitud', 'consulta', 'operativo']).optional(),
+    customFields: z.record(z.string(), z.unknown()).optional(),
+    impact: priority.optional(),
+    urgency: priority.optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (v) => !!v.serviceId === !!v.requestType && (!v.customFields || !!v.serviceId),
+    'Indique el servicio y el tipo de solicitud juntos.',
+  )
+  .refine((v) => !!v.impact === !!v.urgency, 'Indique impacto y urgencia juntos.');
 export const ticketPatch = z
   .object({
     title: nonempty.optional(),

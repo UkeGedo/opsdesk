@@ -71,6 +71,23 @@ export const categories = sqliteTable('ticket_categories', {
   description: text('description'),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
 });
+export const services = sqliteTable('services', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  categoryId: text('category_id')
+    .notNull()
+    .references(() => categories.id, { onDelete: 'restrict' }),
+  responsibleTeam: text('responsible_team').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  defaultPriority: text('default_priority', {
+    enum: ['baja', 'media', 'alta', 'urgente'],
+  }).notNull(),
+  formVersion: integer('form_version').notNull().default(1),
+  formSchema: text('form_schema').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
 export const tickets = sqliteTable(
   'tickets',
   {
@@ -160,6 +177,125 @@ export const counters = sqliteTable('counters', {
   name: text('name').primaryKey(),
   value: integer('value').notNull(),
 });
+export const ticketServiceData = sqliteTable('ticket_service_data', {
+  ticketId: text('ticket_id')
+    .primaryKey()
+    .references(() => tickets.id, { onDelete: 'restrict' }),
+  serviceId: text('service_id')
+    .notNull()
+    .references(() => services.id, { onDelete: 'restrict' }),
+  requestType: text('request_type', {
+    enum: ['incidente', 'solicitud', 'consulta', 'operativo'],
+  }).notNull(),
+  formSnapshot: text('form_snapshot').notNull(),
+  values: text('values').notNull(),
+});
+export const priorityMatrices = sqliteTable(
+  'priority_matrices',
+  {
+    id: text('id').primaryKey(),
+    version: integer('version').notNull(),
+    matrix: text('matrix').notNull(),
+    createdAt: text('created_at').notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+  },
+  (t) => [uniqueIndex('priority_matrices_version_idx').on(t.version)],
+);
+export const ticketPriorityData = sqliteTable('ticket_priority_data', {
+  ticketId: text('ticket_id')
+    .primaryKey()
+    .references(() => tickets.id, { onDelete: 'restrict' }),
+  impact: text('impact').notNull(),
+  urgency: text('urgency').notNull(),
+  calculatedPriority: text('calculated_priority').notNull(),
+  explanation: text('explanation').notNull(),
+  matrixVersion: integer('matrix_version').notNull(),
+  matrixSnapshot: text('matrix_snapshot').notNull(),
+});
+export const savedTicketViews = sqliteTable(
+  'saved_ticket_views',
+  {
+    id: text('id').primaryKey(),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    name: text('name').notNull(),
+    filters: text('filters').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [index('saved_ticket_views_owner_idx').on(t.ownerId)],
+);
+
+// SLA policy versions are immutable; each ticket cycle also stores its own snapshot.
+export const slaPolicies = sqliteTable(
+  'sla_policies',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    version: integer('version').notNull(),
+    serviceId: text('service_id').references(() => services.id, { onDelete: 'restrict' }),
+    priority: text('priority', { enum: ['baja', 'media', 'alta', 'urgente'] }),
+    effectiveFrom: text('effective_from').notNull(),
+    effectiveUntil: text('effective_until'),
+    active: integer('active', { mode: 'boolean' }).notNull().default(true),
+    firstResponseMs: integer('first_response_ms').notNull(),
+    resolutionMs: integer('resolution_ms').notNull(),
+    calendar: text('calendar').notNull(),
+    pauseStatuses: text('pause_statuses').notNull(),
+    createdAt: text('created_at').notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+  },
+  (t) => [check('sla_policy_targets', sql`${t.firstResponseMs} > 0 and ${t.resolutionMs} > 0`)],
+);
+
+export const ticketSlas = sqliteTable(
+  'ticket_slas',
+  {
+    id: text('id').primaryKey(),
+    ticketId: text('ticket_id')
+      .notNull()
+      .references(() => tickets.id, { onDelete: 'restrict' }),
+    policyId: text('policy_id')
+      .notNull()
+      .references(() => slaPolicies.id, { onDelete: 'restrict' }),
+    snapshot: text('snapshot').notNull(),
+    startedAt: text('started_at').notNull(),
+    firstResponseAt: text('first_response_at'),
+    resolvedAt: text('resolved_at'),
+  },
+  (t) => [index('ticket_slas_ticket_idx').on(t.ticketId, t.startedAt)],
+);
+
+export const ticketSlaPauses = sqliteTable(
+  'ticket_sla_pauses',
+  {
+    id: text('id').primaryKey(),
+    slaId: text('sla_id')
+      .notNull()
+      .references(() => ticketSlas.id, { onDelete: 'restrict' }),
+    startedAt: text('started_at').notNull(),
+    endedAt: text('ended_at'),
+  },
+  (t) => [index('ticket_sla_pauses_sla_idx').on(t.slaId, t.startedAt)],
+);
+
+export const responseTemplates = sqliteTable(
+  'response_templates',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    categoryId: text('category_id').references(() => categories.id, { onDelete: 'restrict' }),
+    active: integer('active', { mode: 'boolean' }).notNull().default(true),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [index('response_templates_category_idx').on(t.categoryId, t.active)],
+);
 
 // Auditoría inmutable desde la API; se conserva aunque una cuenta sea desactivada.
 export const auditLogs = sqliteTable(

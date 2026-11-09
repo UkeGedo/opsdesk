@@ -54,6 +54,7 @@ export function TicketStatus({
       setReason('');
       void cache.invalidateQueries({ queryKey: ['ticket', ticketId] });
       void cache.invalidateQueries({ queryKey: ['history', ticketId] });
+      void cache.invalidateQueries({ queryKey: ['ticket-sla', ticketId] });
       void cache.invalidateQueries({ queryKey: ['tickets'] });
     },
   });

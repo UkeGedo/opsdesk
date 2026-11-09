@@ -1,0 +1,13 @@
+# Service Desk: fundamentos de la fase 10
+
+La fase 10 está en desarrollo. Las colas visibles de estado, prioridad y asignación usan los filtros y permisos existentes de tickets. «Urgentes» corresponde al valor `urgente` que ya utiliza el sistema; incluye tickets de cualquier estado. «Mis tickets» aparece para técnicos y se limita a su ámbito autorizado.
+
+El módulo de dominio `apps/api/src/modules/service-desk/` contiene cálculos independientes de React: horario semanal en zona IANA, excepciones por fecha, pausas, vencimiento proyectado y evaluación de cumplimiento. El tiempo consumido suma exclusivamente los intervalos atendidos, descontando las pausas. El tiempo restante es `máximo(0, objetivo - consumido)`. El cálculo proyectado no presupone pausas futuras desconocidas; durante una pausa abierta no se proyecta una fecha. Las horas repetidas o ausentes por horario de verano se cuentan según los instantes reales. El cálculo limita el horizonte a cinco años.
+
+La selección de políticas da precedencia al servicio específico sobre el global, y después a la prioridad específica sobre la genérica. Un empate se rechaza. Cada nuevo ticket conserva una copia de la política que le corresponde. La primera respuesta es el primer comentario público de un miembro del personal; una resolución sin respuesta pública se considera incumplimiento de primera respuesta. Al reabrir se inicia otro ciclo con la copia original de política. La validación de formularios acepta únicamente campos declarativos, sin ejecutar expresiones ni JavaScript. El formulario y los valores se guardan como instantánea del ticket.
+
+La matriz configurable de impacto y urgencia se versiona y conserva en cada ticket calculado. `urgente` es el nivel superior ya existente en la aplicación. La prioridad resultante se aplica en el servidor antes de seleccionar la política SLA y se conserva una explicación. Las modificaciones posteriores de prioridad se registran en el historial existente.
+
+Las vistas de filtros se guardan por usuario y no se comparten con otras cuentas. Las plantillas de respuesta admiten búsqueda, categoría, creación, edición y desactivación; su inserción en un comentario no lo publica automáticamente.
+
+Pendiente: colas de vencimiento; reglas de escalamiento idempotentes; disponibilidad y especialidades; plantillas de tickets; métricas verificables; gestión y permisos reales de equipos; pruebas ampliadas de integración, concurrencia y recorrido completo. El nombre de equipo del catálogo es informativo, no un control de autorización. Los tickets creados antes de configurar una política no reciben un SLA retroactivo. Hasta completar y comprobar estos elementos no debe declararse terminada la fase.

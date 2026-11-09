@@ -8,6 +8,10 @@ import { Attachments } from '../tickets/attachments';
 import { useSession } from '../../app/security';
 import { TicketMaterials } from '../tickets/ticket-materials';
 import { TicketStatus } from '../tickets/ticket-status';
+import { TicketSla } from '../tickets/ticket-sla';
+import { ResponseTemplates } from '../tickets/response-templates';
+import { TicketService } from '../tickets/ticket-service';
+import { TicketPriority } from '../tickets/ticket-priority';
 import { type Ticket, activityDetail, date, ErrorBox, labels } from './shared';
 import { useDirtyNavigation } from './navigation-guard';
 export function TicketDetail() {
@@ -22,6 +26,8 @@ export function TicketDetail() {
     register,
     handleSubmit,
     reset,
+    getValues,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -39,6 +45,7 @@ export function TicketDetail() {
       commentKey.current = crypto.randomUUID();
       reset();
       void cache.invalidateQueries({ queryKey: ['history', id] });
+      void cache.invalidateQueries({ queryKey: ['ticket-sla', id] });
     },
   });
   const query = useQuery({
@@ -128,6 +135,7 @@ export function TicketDetail() {
           <section className="work-section detail-content">
             <h2>Descripción</h2>
             <p>{query.data?.data.description}</p>
+            <TicketService ticketId={id!} />
             <hr />
             <h2>Conversación</h2>
             {history.isPending ? (
@@ -148,6 +156,17 @@ export function TicketDetail() {
               ))
             ) : (
               <p className="muted">Todavía no hay comentarios.</p>
+            )}
+            {session?.user.role !== 'cliente' && !query.data?.data.archivedAt && (
+              <ResponseTemplates
+                onInsert={(text) => {
+                  const current = getValues('body');
+                  setValue('body', current ? `${current}\n\n${text}` : text, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
+              />
             )}
             {query.data && !('archivedAt' in query.data.data && query.data.data.archivedAt) && (
               <form
@@ -218,6 +237,8 @@ export function TicketDetail() {
           </section>
           <aside className="work-section detail-info">
             <h2>Información</h2>
+            <TicketSla ticketId={id!} />
+            <TicketPriority ticketId={id!} />
             <dl>
               <dt>Estado</dt>
               <dd>

@@ -19,6 +19,7 @@ const requestGroups = new Set([
   'users',
   'customers',
   'categories',
+  'service-desk',
   'tickets',
   'inventory',
   'tasks',
@@ -79,7 +80,7 @@ export function createApp(
       res.vary('Origin');
     }
     if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,OPTIONS');
+      res.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
       res.set('Access-Control-Allow-Headers', 'Content-Type,X-CSRF-Token');
       return res.status(204).end();
     }

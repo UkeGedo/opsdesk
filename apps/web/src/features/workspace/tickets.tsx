@@ -3,6 +3,10 @@ import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { CreateTicket } from '../tickets/create-ticket';
+import { SlaSettings } from '../tickets/sla-settings';
+import { ServiceCatalog } from '../tickets/service-catalog';
+import { PriorityMatrix } from '../tickets/priority-matrix';
+import { SavedViews } from '../tickets/saved-views';
 import { useSession } from '../../app/security';
 import { ErrorBox, labels, LoadingRows, TicketTable, useTickets } from './shared';
 import { TicketPreview } from './ticket-preview';
@@ -71,6 +75,11 @@ export function Tickets() {
       () => params.get('assignedTo') ?? '',
       params.has('assignedTo'),
     );
+  const [priority, setPriority] = useViewState(
+    'tickets.priority',
+    () => params.get('priority') ?? '',
+    params.has('priority'),
+  );
   const [sort, setSort] = useViewState(
     'tickets.sort',
     () =>
@@ -121,6 +130,7 @@ export function Tickets() {
       page: page > 1 ? String(page) : '',
       status,
       assignedTo,
+      priority,
       sort: sort === 'createdAt' ? '' : sort,
       order: order === 'desc' ? '' : order,
     })) {
@@ -128,7 +138,7 @@ export function Tickets() {
       else next.delete(key);
     }
     if (next.toString() !== params.toString()) setParams(next, { replace: true });
-  }, [search, page, status, assignedTo, sort, order, params, setParams]);
+  }, [search, page, status, assignedTo, priority, sort, order, params, setParams]);
   const manager = ['administrador', 'supervisor'].includes(session?.user.role ?? '');
   const technicians = useQuery({
     queryKey: ['technicians'],
@@ -136,7 +146,21 @@ export function Tickets() {
       (await request('/technicians')) as { data: { id: string; fullName: string }[] },
     enabled: manager,
   });
-  const query = useTickets(search, page, status, assignedTo, sort, order);
+  const query = useTickets(search, page, status, assignedTo, sort, order, priority);
+  const queues = [
+    { label: 'Todos', status: '', assignedTo: '', priority: '' },
+    ...(manager
+      ? [{ label: 'Sin asignar', status: '', assignedTo: 'unassigned', priority: '' }]
+      : []),
+    ...(session?.user.role === 'tecnico'
+      ? [{ label: 'Mis tickets', status: '', assignedTo: session.user.id, priority: '' }]
+      : []),
+    { label: 'Urgentes', status: '', assignedTo: '', priority: 'urgente' },
+    { label: 'Pendientes del cliente', status: 'pendiente_cliente', assignedTo: '', priority: '' },
+    { label: 'Reabiertos', status: 'reabierto', assignedTo: '', priority: '' },
+    { label: 'Resueltos', status: 'resuelto', assignedTo: '', priority: '' },
+    { label: 'Cerrados', status: 'cerrado', assignedTo: '', priority: '' },
+  ];
   return (
     <>
       <div className="work-heading">
@@ -174,6 +198,43 @@ export function Tickets() {
         }
       >
         <section className="work-section">
+          {manager && <ServiceCatalog />}
+          {session?.user.role === 'administrador' && <PriorityMatrix />}
+          {session?.user.role === 'administrador' && <SlaSettings />}
+          <SavedViews
+            filters={{ q: search, status, priority, assignedTo, sort, order }}
+            onApply={(view) => {
+              setSearch(view.q);
+              setStatus(view.status);
+              setPriority(view.priority);
+              setAssignedTo(view.assignedTo);
+              setSort(view.sort);
+              setOrder(view.order);
+              setPage(1);
+            }}
+          />
+          <nav aria-label="Colas de tickets" className="ticket-queues">
+            {queues.map((queue) => (
+              <button
+                key={queue.label}
+                type="button"
+                aria-pressed={
+                  status === queue.status &&
+                  assignedTo === queue.assignedTo &&
+                  priority === queue.priority
+                }
+                onClick={() => {
+                  setStatus(queue.status);
+                  setAssignedTo(queue.assignedTo);
+                  setPriority(queue.priority);
+                  setSearch('');
+                  setPage(1);
+                }}
+              >
+                {queue.label}
+              </button>
+            ))}
+          </nav>
           <div className="section-bar">
             <div>
               <h2>Solicitudes</h2>
@@ -258,6 +319,23 @@ export function Tickets() {
                 </select>
               </label>
             )}
+            <label>
+              Prioridad
+              <select
+                value={priority}
+                onChange={(event) => {
+                  setPriority(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Todas</option>
+                {['baja', 'media', 'alta', 'urgente'].map((value) => (
+                  <option key={value} value={value}>
+                    {labels[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label>
               Ordenar por
               <select
