@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 export function TicketMaterials({
   ticketId,
   status,
@@ -23,6 +24,7 @@ export function TicketMaterials({
     [locationId, setLocation] = useState(''),
     [quantity, setQuantity] = useState(1),
     [reason, setReason] = useState('');
+  useDirtyNavigation(!!reason || quantity !== 1);
   const key = useRef(crypto.randomUUID());
   const products = useQuery({
     queryKey: ['inventory', 'product-options', productSearch],
@@ -54,6 +56,7 @@ export function TicketMaterials({
     onSuccess: () => {
       key.current = crypto.randomUUID();
       setReason('');
+      setQuantity(1);
       void cache.invalidateQueries({ queryKey: ['history', ticketId] });
       void cache.invalidateQueries({ queryKey: ['inventory'] });
     },

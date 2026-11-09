@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 type Task = {
   id: string;
   title: string;
@@ -32,6 +33,22 @@ export function TaskEditor({
       const date = new Date(task.dueAt);
       return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     });
+  const originalDueAt = task.dueAt
+    ? (() => {
+        const date = new Date(task.dueAt);
+        return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 16);
+      })()
+    : '';
+  const dirty =
+    title !== task.title ||
+    description !== task.description ||
+    assigneeId !== task.assigneeId ||
+    priority !== task.priority ||
+    ticketId !== (task.ticketId ?? '') ||
+    dueAt !== originalDueAt;
+  useDirtyNavigation(dirty);
   const edit = useMutation({
     mutationFn: () =>
       request(`/tasks/${encodeURIComponent(task.id)}`, 'PATCH', {
@@ -102,7 +119,12 @@ export function TaskEditor({
         </p>
       )}
       <button disabled={edit.isPending}>Guardar cambios</button>
-      <button type="button" onClick={onClose}>
+      <button
+        type="button"
+        onClick={() => {
+          if (!dirty || window.confirm('¿Descartar los cambios de la tarea?')) onClose();
+        }}
+      >
         Cancelar
       </button>
     </form>

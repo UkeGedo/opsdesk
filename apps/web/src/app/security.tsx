@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { ThemeToggle } from './theme';
+import { useDirtyNavigation } from '../features/workspace/navigation-guard';
 
 type User = {
   id: string;
@@ -361,6 +362,9 @@ export function Profile() {
   const [currentPassword, setCurrent] = useState('');
   const [newPassword, setNew] = useState('');
   const [name, setName] = useState('');
+  useDirtyNavigation(
+    !!session && (!!currentPassword || !!newPassword || (!!name && name !== session.user.fullName)),
+  );
   useEffect(() => {
     if (session) {
       setName(session.user.fullName);

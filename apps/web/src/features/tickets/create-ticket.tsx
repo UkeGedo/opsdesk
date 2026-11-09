@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 export function CreateTicket({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void } = {}) {
   const { request, session } = useSession();
   const cache = useQueryClient();
@@ -14,6 +15,9 @@ export function CreateTicket({ onDirtyChange }: { onDirtyChange?: (dirty: boolea
     [title, setTitle] = useState(''),
     [description, setDescription] = useState(''),
     [priority, setPriority] = useState('media');
+  const clearGuard = useDirtyNavigation(
+    !!(customerId || categoryId || title || description || priority !== 'media'),
+  );
   useEffect(() => {
     onDirtyChange?.(!!(customerId || categoryId || title || description || priority !== 'media'));
   }, [customerId, categoryId, title, description, priority, onDirtyChange]);
@@ -40,6 +44,7 @@ export function CreateTicket({ onDirtyChange }: { onDirtyChange?: (dirty: boolea
         priority,
       })) as { data: { id: string } },
     onSuccess: (data) => {
+      clearGuard();
       void cache.invalidateQueries({ queryKey: ['tickets'] });
       navigate(`/tickets/${data.data.id}`);
     },

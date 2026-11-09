@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 const transitions: Record<string, string[]> = {
   abierto: ['en_proceso'],
   asignado: ['en_proceso'],
@@ -33,6 +34,7 @@ export function TicketStatus({
   const [next, setNext] = useState('');
   const [resolution, setResolution] = useState('');
   const [reason, setReason] = useState('');
+  useDirtyNavigation(!!(next || resolution || reason));
   const choices = (transitions[current] ?? []).filter((s) =>
     session?.user.role === 'tecnico'
       ? ['en_proceso', 'pendiente_cliente', 'resuelto'].includes(s)

@@ -181,6 +181,55 @@
   margin-right: 8px;
   white-space: nowrap;
 }
+.work-heading > .security-button {
+  width: auto;
+  flex: 0 0 auto;
+}
+.row-actions {
+  position: relative;
+  display: inline-block;
+}
+.row-actions summary {
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--text);
+}
+.row-actions summary::-webkit-details-marker {
+  display: none;
+}
+.row-actions > div {
+  position: absolute;
+  right: 0;
+  z-index: 10;
+  min-width: 180px;
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-popover);
+}
+.row-actions > div button,
+.row-actions > div a {
+  display: block;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.row-actions > div button:hover,
+.row-actions > div a:hover {
+  background: var(--panel-muted);
+}
 .customer-view {
   border: 0;
   padding: 0;
@@ -193,6 +242,53 @@
 .customer-view:hover {
   color: var(--teal);
   text-decoration: underline;
+}
+.tickets-split {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+.tickets-split > * {
+  min-width: 0;
+}
+.ticket-split-detail {
+  position: sticky;
+  top: 18px;
+}
+.ticket-split-detail p {
+  margin-top: 12px;
+}
+.split-width input {
+  width: 100%;
+}
+.notice-toast {
+  position: fixed;
+  z-index: 30;
+  right: 20px;
+  bottom: 20px;
+  width: min(360px, calc(100vw - 40px));
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popover);
+}
+.notice-toast a {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+.notice-toast button {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
 }
 .dashboard-widget {
   min-width: 0;
@@ -217,6 +313,19 @@
   font-size: 11px;
 }
 @media (max-width: 800px) {
+  .tickets-split {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  .tickets-split > * {
+    width: 100%;
+  }
+  .ticket-split-detail {
+    position: static;
+  }
+  .split-width {
+    display: none !important;
+  }
   .drawer-width {
     display: none;
   }

@@ -7,6 +7,7 @@ import { useSession } from '../../app/security';
 import { CreateCustomer, SetupCustomers } from '../customers/setup-customers';
 import { type Customer, type List, ErrorBox, LoadingRows } from './shared';
 import { Surface } from './surface';
+import { RowActions } from './row-actions';
 export function Customers() {
   const { request, session } = useSession();
   const location = useLocation();
@@ -112,6 +113,20 @@ export function Customers() {
                     </td>
                     {session?.user.role === 'administrador' && (
                       <td>
+                        <RowActions label={`Acciones de ${c.name}`}>
+                          <button type="button" onClick={() => setViewing(c)}>
+                            Ver ficha
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDirty(false);
+                              setEditing(c);
+                            }}
+                          >
+                            Editar cliente
+                          </button>
+                        </RowActions>{' '}
                         <button
                           type="button"
                           onClick={() => {

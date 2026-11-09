@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useSession } from '../../app/security';
+import { RowActions } from './row-actions';
 export type Ticket = {
   id: string;
   ticketNumber: number;
@@ -298,6 +299,14 @@ export function TicketTable({
                   <Link to={`/tickets/${t.id}`} aria-label={`Ver ticket ${t.ticketNumber}`}>
                     <ArrowRight size={17} />
                   </Link>
+                  {onPreview && (
+                    <RowActions label={`Acciones del ticket ${t.ticketNumber}`}>
+                      <button type="button" onClick={() => onPreview(t)}>
+                        Abrir vista rápida
+                      </button>
+                      <Link to={`/tickets/${t.id}`}>Abrir ticket</Link>
+                    </RowActions>
+                  )}
                 </td>
               </tr>
             ))}

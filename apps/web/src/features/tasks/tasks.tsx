@@ -2,6 +2,10 @@ import { TaskEditor } from './task-editor';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { Surface } from '../workspace/surface';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
+import { Link } from 'react-router-dom';
+import { RowActions } from '../workspace/row-actions';
 type Task = {
   id: string;
   title: string;
@@ -31,6 +35,9 @@ export function Tasks() {
   const [priority, setPriority] = useState('media');
   const [dueAt, setDueAt] = useState('');
   const [ticketId, setTicketId] = useState('');
+  useDirtyNavigation(
+    !!(title || description || assigneeId || dueAt || ticketId || priority !== 'media'),
+  );
   const tasks = useQuery({
     queryKey: ['tasks', filter, ownerFilter, page],
     queryFn: async () =>
@@ -67,6 +74,9 @@ export function Tasks() {
       setTitle('');
       setDescription('');
       setTicketId('');
+      setAssigneeId('');
+      setPriority('media');
+      setDueAt('');
       void cache.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
@@ -164,8 +174,14 @@ export function Tasks() {
               <button type="button" onClick={() => setSelected(selected === t.id ? '' : t.id)}>
                 Ver historial
               </button>
+              <RowActions label={`Acciones de tarea ${t.title}`}>
+                <button type="button" onClick={() => setSelected(t.id)}>
+                  Abrir historial
+                </button>
+                {t.ticketId && <Link to={`/tickets/${t.ticketId}`}>Ver ticket asociado</Link>}
+              </RowActions>
               {manager && t.status !== 'completada' && (
-                <button type="button" onClick={() => setEditing(editing === t.id ? '' : t.id)}>
+                <button type="button" disabled={!!editing} onClick={() => setEditing(t.id)}>
                   Editar tarea
                 </button>
               )}
@@ -195,20 +211,6 @@ export function Tasks() {
                   Completar
                 </button>
               )}
-              {selected === t.id &&
-                (history.isPending ? (
-                  <p>Cargando historial…</p>
-                ) : history.isError ? (
-                  <p role="alert">No se pudo cargar el historial.</p>
-                ) : (
-                  <ol>
-                    {history.data?.data.map((e) => (
-                      <li key={e.id}>
-                        {e.action} · {new Date(e.createdAt).toLocaleString('es-CO')}
-                      </li>
-                    ))}
-                  </ol>
-                ))}
             </article>
           ))
         )}
@@ -238,6 +240,26 @@ export function Tasks() {
           </p>
         )}
       </section>
+      {selected && (
+        <Surface title="Historial de tarea" drawer onClose={() => setSelected('')}>
+          <h3>{tasks.data?.data.find((task) => task.id === selected)?.title}</h3>
+          {history.isPending ? (
+            <p role="status">Cargando historial…</p>
+          ) : history.isError ? (
+            <p role="alert">No se pudo cargar el historial.</p>
+          ) : history.data?.data.length ? (
+            <ol>
+              {history.data.data.map((event) => (
+                <li key={event.id}>
+                  {event.action} · {new Date(event.createdAt).toLocaleString('es-CO')}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>No hay actividad registrada.</p>
+          )}
+        </Surface>
+      )}
       {manager && (
         <section className="work-section">
           <h2>Nueva tarea</h2>

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 export function CreateCustomer({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
   const { request } = useSession();
   const cache = useQueryClient();
   const [name, setName] = useState(''),
     [email, setEmail] = useState(''),
     [phone, setPhone] = useState('');
+  useDirtyNavigation(!!(name || email || phone));
   useEffect(() => {
     onDirtyChange?.(!!(name || email || phone));
   }, [name, email, phone, onDirtyChange]);
@@ -69,6 +71,7 @@ export function SetupCustomers({
   const { request, session } = useSession();
   const cache = useQueryClient();
   const [category, setCategory] = useState('');
+  useDirtyNavigation(!!category);
   const addCategory = useMutation({
     mutationFn: () => request('/categories', 'POST', { name: category }),
     onSuccess: () => {

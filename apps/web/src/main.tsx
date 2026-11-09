@@ -1,6 +1,12 @@
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Link,
+  Route,
+  RouterProvider,
+} from 'react-router-dom';
 import {
   ArrowDown,
   ArrowRight,
@@ -19,6 +25,7 @@ import './interaction.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider, Login, Recovery, Reset, Profile, Denied } from './app/security';
 import { ThemeProvider, ThemeToggle } from './app/theme';
+import { NavigationGuard } from './features/workspace/navigation-guard';
 
 const Workspace = lazy(() =>
   import('./features/workspace/layout').then((m) => ({ default: m.Workspace })),
@@ -360,39 +367,49 @@ function NotFound() {
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15000 } },
 });
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <>
+      <Route path="/" element={<Home />} />
+      <Route element={<Workspace />}>
+        <Route path="/panel" element={<Dashboard />} />
+        <Route path="/tickets" element={<Tickets />} />
+        <Route path="/tickets/:id" element={<TicketDetail />} />
+        <Route path="/clientes" element={<Customers />} />
+        <Route path="/inventario" element={<Inventory />} />
+        <Route path="/tareas" element={<Tasks />} />
+      </Route>
+      <Route path="/acceso" element={<Login />} />
+      <Route path="/recuperar" element={<Recovery />} />
+      <Route path="/restablecer" element={<Reset />} />
+      <Route
+        path="/perfil"
+        element={
+          <NavigationGuard>
+            <Profile />
+          </NavigationGuard>
+        }
+      />
+      <Route path="/denegado" element={<Denied />} />
+      <Route path="*" element={<NotFound />} />
+    </>,
+  ),
+);
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter>
-          <SessionProvider>
-            <Suspense
-              fallback={
-                <main className="work-empty" role="status">
-                  Cargando sección…
-                </main>
-              }
-            >
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route element={<Workspace />}>
-                  <Route path="/panel" element={<Dashboard />} />
-                  <Route path="/tickets" element={<Tickets />} />
-                  <Route path="/tickets/:id" element={<TicketDetail />} />
-                  <Route path="/clientes" element={<Customers />} />
-                  <Route path="/inventario" element={<Inventory />} />
-                  <Route path="/tareas" element={<Tasks />} />
-                </Route>
-                <Route path="/acceso" element={<Login />} />
-                <Route path="/recuperar" element={<Recovery />} />
-                <Route path="/restablecer" element={<Reset />} />
-                <Route path="/perfil" element={<Profile />} />
-                <Route path="/denegado" element={<Denied />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </SessionProvider>
-        </BrowserRouter>
+        <SessionProvider>
+          <Suspense
+            fallback={
+              <main className="work-empty" role="status">
+                Cargando sección…
+              </main>
+            }
+          >
+            <RouterProvider router={router} />
+          </Suspense>
+        </SessionProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { Surface } from '../workspace/surface';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
+import { RowActions } from '../workspace/row-actions';
 type Asset = {
   id: string;
   name: string;
@@ -33,6 +36,7 @@ export function Assets() {
     [ticketId, setTicket] = useState(''),
     [reason, setReason] = useState(''),
     [selected, setSelected] = useState('');
+  useDirtyNavigation(!!(name || serial || locationId || assigneeId || ticketId || reason));
   const assets = useQuery({
     queryKey: ['inventory', 'assets', page, search],
     queryFn: async () =>
@@ -68,6 +72,7 @@ export function Assets() {
     onSuccess: () => {
       setName('');
       setSerial('');
+      setLocation('');
       void cache.invalidateQueries({ queryKey: ['inventory', 'assets'] });
     },
   });
@@ -83,6 +88,8 @@ export function Assets() {
     onSuccess: () => {
       setReason('');
       setTicket('');
+      setAssignee('');
+      setLocation('');
       void cache.invalidateQueries({ queryKey: ['inventory', 'assets'] });
       void cache.invalidateQueries({ queryKey: ['asset-history'] });
     },
@@ -144,20 +151,12 @@ export function Assets() {
             <button type="button" onClick={() => setSelected(selected === a.id ? '' : a.id)}>
               Ver historial
             </button>
-            {selected === a.id &&
-              (history.isPending ? (
-                <p>Cargando…</p>
-              ) : history.isError ? (
-                <p role="alert">No se pudo cargar el historial.</p>
-              ) : (
-                <ol>
-                  {history.data?.data.map((h) => (
-                    <li key={h.id}>
-                      {h.action} · {new Date(h.createdAt).toLocaleString('es-CO')}
-                    </li>
-                  ))}
-                </ol>
-              ))}
+            <RowActions label={`Acciones de equipo ${a.name}`}>
+              <button type="button" onClick={() => setSelected(a.id)}>
+                Abrir ficha de equipo
+              </button>
+              {a.ticketId && <Link to={`/tickets/${a.ticketId}`}>Ver ticket asociado</Link>}
+            </RowActions>
             {(manager || a.assignedTo === session?.user.id) && (
               <div className="comment-form">
                 {manager && (
@@ -220,6 +219,39 @@ export function Assets() {
             )}
           </article>
         ))
+      )}
+      {selected && (
+        <Surface title="Ficha e historial de equipo" drawer onClose={() => setSelected('')}>
+          {assets.data?.data
+            .filter((asset) => asset.id === selected)
+            .map((asset) => (
+              <div key={asset.id}>
+                <h3>{asset.name}</h3>
+                <p>Serie: {asset.serial}</p>
+                <p>
+                  {asset.assignedTo ? 'Asignado' : 'Disponible'} · Ubicación:{' '}
+                  {locations.data?.data.find((location) => location.id === asset.locationId)
+                    ?.name ?? '—'}
+                </p>
+              </div>
+            ))}
+          <h3>Historial</h3>
+          {history.isPending ? (
+            <p role="status">Cargando historial…</p>
+          ) : history.isError ? (
+            <p role="alert">No se pudo cargar el historial.</p>
+          ) : history.data?.data.length ? (
+            <ol>
+              {history.data.data.map((event) => (
+                <li key={event.id}>
+                  {event.action} · {new Date(event.createdAt).toLocaleString('es-CO')}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>No hay actividad registrada.</p>
+          )}
+        </Surface>
       )}
       {assets.data && (
         <div aria-label="Paginación de equipos">

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSession } from '../../app/security';
 
 type Tab = { key: string; href: string; label: string };
 function labelFor(path: string) {
@@ -20,10 +21,39 @@ function labelFor(path: string) {
 export function WorkTabs() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [tabs, setTabs] = useState<Tab[]>([]);
+  const { session } = useSession();
+  const storageKey = `opsdesk-tabs:${session?.user.id ?? ''}`;
+  const pendingClose = useRef('');
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    try {
+      const saved: unknown = JSON.parse(sessionStorage.getItem(storageKey) ?? '[]');
+      if (!Array.isArray(saved)) return [];
+      return saved
+        .filter(
+          (path): path is string =>
+            typeof path === 'string' &&
+            /^\/(panel|tickets(?:\/[0-9a-f-]{36})?|clientes|inventario|tareas)$/.test(path),
+        )
+        .slice(-8)
+        .map((path) => ({ key: path, href: path, label: labelFor(path) }));
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(tabs.map((tab) => tab.key)));
+    } catch {
+      /* Preferencia opcional. */
+    }
+  }, [tabs, storageKey]);
   useEffect(() => {
     const { pathname, search, hash } = location;
     setTabs((current) => {
+      if (pendingClose.current && pendingClose.current !== pathname) {
+        current = current.filter((tab) => tab.key !== pendingClose.current);
+        pendingClose.current = '';
+      }
       const next = { key: pathname, href: pathname + search + hash, label: labelFor(pathname) };
       const index = current.findIndex((tab) => tab.key === pathname);
       if (index < 0) return [...current.slice(-7), next];
@@ -33,8 +63,10 @@ export function WorkTabs() {
   }, [location]);
   function close(tab: Tab) {
     const remaining = tabs.filter((entry) => entry.key !== tab.key);
-    setTabs(remaining);
-    if (tab.key === location.pathname) navigate(remaining.at(-1)?.href ?? '/panel');
+    if (tab.key === location.pathname) {
+      pendingClose.current = tab.key;
+      navigate(remaining.at(-1)?.href ?? '/panel');
+    } else setTabs(remaining);
   }
   return (
     <nav className="work-tabs" aria-label="Pestañas de trabajo">

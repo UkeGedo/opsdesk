@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 type Attachment = { id: string; originalName: string; size: number; createdAt: string };
 export function Attachments({ ticketId, archived }: { ticketId: string; archived: boolean }) {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
+  useDirtyNavigation(!!file);
   const [inputKey, setInputKey] = useState(0);
   const list = useQuery({
     queryKey: ['attachments', ticketId],

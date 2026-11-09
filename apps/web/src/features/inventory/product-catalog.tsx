@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 type Product = { id: string; name: string; unit: string; minimum: number; updatedAt: string };
 type LowProduct = Product & { quantity: number };
 export function ProductCatalog() {
@@ -15,6 +16,14 @@ export function ProductCatalog() {
     [name, setName] = useState(''),
     [unit, setUnit] = useState(''),
     [minimum, setMinimum] = useState(0);
+  const original = useRef<Product | null>(null);
+  const dirty =
+    !!selected &&
+    !!original.current &&
+    (name !== original.current.name ||
+      unit !== original.current.unit ||
+      minimum !== original.current.minimum);
+  useDirtyNavigation(dirty);
   const products = useQuery({
     queryKey: ['catalog', q, page],
     queryFn: async () =>
@@ -97,6 +106,8 @@ export function ProductCatalog() {
                 <button
                   type="button"
                   onClick={() => {
+                    if (dirty && !window.confirm('¿Descartar los cambios del producto?')) return;
+                    original.current = p;
                     setSelected(p.id);
                     setVersion(p.updatedAt);
                     setName(p.name);
@@ -179,7 +190,12 @@ export function ProductCatalog() {
           <button className="security-button" disabled={edit.isPending}>
             Guardar producto
           </button>
-          <button type="button" onClick={() => setSelected('')}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!dirty || window.confirm('¿Descartar los cambios del producto?')) setSelected('');
+            }}
+          >
             Cancelar
           </button>
         </form>

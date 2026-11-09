@@ -3,6 +3,7 @@ import { Assets } from './assets';
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useDirtyNavigation } from '../workspace/navigation-guard';
 type Product = { id: string; name: string; unit: string; minimum: number };
 type Location = { id: string; name: string };
 type Stock = {
@@ -40,6 +41,9 @@ export function Inventory() {
   const [quantity, setQuantity] = useState(1);
   const [reason, setReason] = useState('');
   const [ticket, setTicket] = useState('');
+  useDirtyNavigation(
+    !!(name || locationName || reason || ticket || minimum || quantity !== 1 || unit !== 'unidad'),
+  );
   const [stockPage, setStockPage] = useState(1),
     [movementPage, setMovementPage] = useState(1);
   const key = useRef(crypto.randomUUID());
@@ -86,6 +90,8 @@ export function Inventory() {
     mutationFn: () => request('/inventory/products', 'POST', { name, unit, minimum }),
     onSuccess: () => {
       setName('');
+      setMinimum(0);
+      setUnit('unidad');
       refresh();
     },
   });
@@ -112,6 +118,7 @@ export function Inventory() {
       key.current = crypto.randomUUID();
       setReason('');
       setTicket('');
+      setQuantity(1);
       refresh();
     },
   });

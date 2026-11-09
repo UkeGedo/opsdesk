@@ -9,6 +9,7 @@ import { useSession } from '../../app/security';
 import { TicketMaterials } from '../tickets/ticket-materials';
 import { TicketStatus } from '../tickets/ticket-status';
 import { type Ticket, activityDetail, date, ErrorBox, labels } from './shared';
+import { useDirtyNavigation } from './navigation-guard';
 export function TicketDetail() {
   const { id } = useParams();
   const { request, session } = useSession();
@@ -21,11 +22,12 @@ export function TicketDetail() {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: { body: '', visibility: 'cliente' },
   });
+  useDirtyNavigation(isDirty);
   const commentKey = useRef(crypto.randomUUID());
   const comment = useMutation({
     mutationFn: (value: z.infer<typeof schema>) =>
@@ -62,6 +64,7 @@ export function TicketDetail() {
     resolver: zodResolver(assignmentSchema),
     defaultValues: { technicianId: '', reason: '' },
   });
+  useDirtyNavigation(assignmentForm.formState.isDirty);
   const assign = useMutation({
     mutationFn: (value: z.infer<typeof assignmentSchema>) =>
       request(`/tickets/${encodeURIComponent(id!)}/assignment`, 'POST', {

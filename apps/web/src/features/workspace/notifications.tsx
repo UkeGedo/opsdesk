@@ -15,6 +15,8 @@ export function Notifications() {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<Notice | null>(null);
+  const seen = useRef<Set<string> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -40,6 +42,22 @@ export function Notifications() {
     queryFn: async () => (await request('/notifications')) as { data: Notice[] },
     refetchOnWindowFocus: true,
   });
+  useEffect(() => {
+    if (!query.data) return;
+    const notices = query.data.data;
+    if (seen.current === null) {
+      seen.current = new Set(notices.map((notice) => notice.id));
+      return;
+    }
+    const fresh = notices.find((notice) => !notice.readAt && !seen.current!.has(notice.id));
+    notices.forEach((notice) => seen.current!.add(notice.id));
+    if (fresh) setToast(fresh);
+  }, [query.data]);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
   const mark = useMutation({
     mutationFn: (id: string) => request('/notifications/read', 'POST', { ids: [id] }),
     onSuccess: () => void cache.invalidateQueries({ queryKey: ['notifications'] }),
@@ -95,6 +113,17 @@ export function Notifications() {
     (taskAlerts.data?.data.filter((item) => !item.readAt).length ?? 0);
   return (
     <div className="notice-menu" ref={menuRef}>
+      {toast && (
+        <aside className="notice-toast" role="status">
+          <Link to={`/tickets/${toast.ticketId}`} onClick={() => setToast(null)}>
+            <strong>{toast.title}</strong>
+            <span>{toast.message}</span>
+          </Link>
+          <button type="button" aria-label="Cerrar aviso" onClick={() => setToast(null)}>
+            ×
+          </button>
+        </aside>
+      )}
       <button
         className="notice-toggle"
         ref={triggerRef}
@@ -119,6 +148,7 @@ export function Notifications() {
               Algunas notificaciones podrían no haberse marcado. Inténtalo de nuevo.
             </p>
           )}
+          {!!query.data?.data.length && <h3>Tickets</h3>}
           {query.isPending ? (
             <p role="status">Cargando…</p>
           ) : query.isError ? (
@@ -142,6 +172,7 @@ export function Notifications() {
               </article>
             ))
           )}
+          {!!alerts.data?.data.length && <h3>Inventario</h3>}
           {alerts.data?.data.map((a) => (
             <article key={a.id}>
               <Link to="/inventario" onClick={() => setOpen(false)}>
@@ -155,6 +186,7 @@ export function Notifications() {
               )}
             </article>
           ))}
+          {!!taskAlerts.data?.data.length && <h3>Tareas</h3>}
           {taskAlerts.data?.data.map((a) => (
             <article key={a.id}>
               <Link to="/tareas" onClick={() => setOpen(false)}>
