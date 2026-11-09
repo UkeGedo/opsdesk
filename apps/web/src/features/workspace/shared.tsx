@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useSession } from '../../app/security';
 import { RowActions } from './row-actions';
+import { useDirtyNavigation } from './navigation-guard';
+import { useViewState } from './workspace-memory';
 export type Ticket = {
   id: string;
   ticketNumber: number;
@@ -111,12 +113,13 @@ export function TicketTable({
   onPreview?: (ticket: Ticket) => void;
   columns?: { status: boolean; priority: boolean; updated: boolean };
 }) {
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useViewState<string[]>('tickets.selection', []);
   const [message, setMessage] = useState('');
   const [bulkPriority, setBulkPriority] = useState('');
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [bulkErrors, setBulkErrors] = useState<string[]>([]);
+  useDirtyNavigation(selectable && (!!bulkPriority || confirmBulk));
   const { request, session } = useSession();
   const cache = useQueryClient();
   const canBulk = ['administrador', 'supervisor'].includes(session?.user.role ?? '');

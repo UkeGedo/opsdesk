@@ -75,11 +75,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
+  useEffect(() => {
+    function endExpiredSession() {
+      setSession(null);
+    }
+    window.addEventListener('opsdesk:exit-expired', endExpiredSession);
+    return () => window.removeEventListener('opsdesk:exit-expired', endExpiredSession);
+  }, []);
   async function request(path: string, method = 'GET', body?: object) {
     try {
       return await send(path, method, body, session?.csrf);
     } catch (error) {
-      if ((error as { code?: string }).code === 'UNAUTHENTICATED') setSession(null);
+      if (
+        (error as { code?: string }).code === 'UNAUTHENTICATED' &&
+        window.dispatchEvent(new Event('opsdesk:session-expired', { cancelable: true }))
+      )
+        setSession(null);
       throw error;
     }
   }
@@ -147,14 +158,16 @@ export function Login() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema) });
+  const clearGuard = useDirtyNavigation(isDirty && !session);
   async function submit(v: z.infer<typeof loginSchema>) {
     setMessage('');
     try {
       const value = (await send('/auth/login', 'POST', v)) as {
         data: { user: User; csrfToken: string };
       };
+      clearGuard();
       setSession({ user: value.data.user, csrf: value.data.csrfToken });
       navigate('/panel', { replace: true });
     } catch (e) {
@@ -214,8 +227,9 @@ export function Recovery() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<z.infer<typeof recoverySchema>>({ resolver: zodResolver(recoverySchema) });
+  useDirtyNavigation(isDirty && !done);
   async function submit(v: z.infer<typeof recoverySchema>) {
     try {
       await send('/auth/forgot-password', 'POST', v);
@@ -276,8 +290,9 @@ export function Reset() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<z.infer<typeof resetSchema>>({ resolver: zodResolver(resetSchema) });
+  useDirtyNavigation(isDirty && !done);
   useEffect(() => {
     window.history.replaceState(null, '', window.location.pathname);
     let active = true;
@@ -381,6 +396,11 @@ export function Profile() {
     );
   if (!session) return <Navigate to="/acceso" state={{ sessionRequired: true }} replace />;
   async function logout() {
+    if (
+      (currentPassword || newPassword || (name && name !== session?.user.fullName)) &&
+      !window.confirm('Hay cambios sin guardar. ¿Cerrar sesión y descartarlos?')
+    )
+      return;
     try {
       await request('/auth/logout', 'POST');
       setSession(null);

@@ -6,6 +6,7 @@ import { Surface } from '../workspace/surface';
 import { useDirtyNavigation } from '../workspace/navigation-guard';
 import { Link } from 'react-router-dom';
 import { RowActions } from '../workspace/row-actions';
+import { useViewState } from '../workspace/workspace-memory';
 type Task = {
   id: string;
   title: string;
@@ -23,12 +24,12 @@ export function Tasks() {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const manager = ['administrador', 'supervisor'].includes(session?.user.role ?? '');
-  const [filter, setFilter] = useState('');
-  const [page, setPage] = useState(1);
+  const [filter, setFilter] = useViewState('tasks.filter', '');
+  const [page, setPage] = useViewState('tasks.page', 1);
   const [selected, setSelected] = useState('');
   const [editing, setEditing] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [techSearch, setTechSearch] = useState('');
+  const [ownerFilter, setOwnerFilter] = useViewState('tasks.owner', '');
+  const [techSearch, setTechSearch] = useViewState('tasks.technicianSearch', '');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -108,6 +109,7 @@ export function Tasks() {
           Mostrar{' '}
           <select
             value={filter}
+            disabled={!!editing}
             onChange={(e) => {
               setFilter(e.target.value);
               setPage(1);
@@ -135,6 +137,7 @@ export function Tasks() {
             Responsable
             <select
               value={ownerFilter}
+              disabled={!!editing}
               onChange={(e) => {
                 setOwnerFilter(e.target.value);
                 setPage(1);
@@ -216,7 +219,11 @@ export function Tasks() {
         )}
         {tasks.data && (
           <div aria-label="Paginación de tareas">
-            <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            <button
+              type="button"
+              disabled={page <= 1 || !!editing}
+              onClick={() => setPage(page - 1)}
+            >
               Anterior
             </button>
             <span>
@@ -225,7 +232,7 @@ export function Tasks() {
             </span>
             <button
               type="button"
-              disabled={page * tasks.data.meta.limit >= tasks.data.meta.total}
+              disabled={!!editing || page * tasks.data.meta.limit >= tasks.data.meta.total}
               onClick={() => setPage(page + 1)}
             >
               Siguiente

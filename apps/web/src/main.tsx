@@ -26,6 +26,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider, Login, Recovery, Reset, Profile, Denied } from './app/security';
 import { ThemeProvider, ThemeToggle } from './app/theme';
 import { NavigationGuard } from './features/workspace/navigation-guard';
+import { WorkspaceMemory } from './features/workspace/workspace-memory';
 
 const Workspace = lazy(() =>
   import('./features/workspace/layout').then((m) => ({ default: m.Workspace })),
@@ -379,9 +380,30 @@ const router = createBrowserRouter(
         <Route path="/inventario" element={<Inventory />} />
         <Route path="/tareas" element={<Tasks />} />
       </Route>
-      <Route path="/acceso" element={<Login />} />
-      <Route path="/recuperar" element={<Recovery />} />
-      <Route path="/restablecer" element={<Reset />} />
+      <Route
+        path="/acceso"
+        element={
+          <NavigationGuard>
+            <Login />
+          </NavigationGuard>
+        }
+      />
+      <Route
+        path="/recuperar"
+        element={
+          <NavigationGuard>
+            <Recovery />
+          </NavigationGuard>
+        }
+      />
+      <Route
+        path="/restablecer"
+        element={
+          <NavigationGuard>
+            <Reset />
+          </NavigationGuard>
+        }
+      />
       <Route
         path="/perfil"
         element={
@@ -400,15 +422,17 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <SessionProvider>
-          <Suspense
-            fallback={
-              <main className="work-empty" role="status">
-                Cargando sección…
-              </main>
-            }
-          >
-            <RouterProvider router={router} />
-          </Suspense>
+          <WorkspaceMemory>
+            <Suspense
+              fallback={
+                <main className="work-empty" role="status">
+                  Cargando sección…
+                </main>
+              }
+            >
+              <RouterProvider router={router} />
+            </Suspense>
+          </WorkspaceMemory>
         </SessionProvider>
       </ThemeProvider>
     </QueryClientProvider>

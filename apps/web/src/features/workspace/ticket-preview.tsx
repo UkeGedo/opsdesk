@@ -4,12 +4,14 @@ import { Link } from 'react-router-dom';
 import { useSession } from '../../app/security';
 import { ErrorBox, labels, type Ticket } from './shared';
 import { Surface } from './surface';
+import { useDirtyNavigation } from './navigation-guard';
 
 export function TicketPreview({ id, onClose }: { id: string; onClose: () => void }) {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const [priority, setPriority] = useState('');
   const [technician, setTechnician] = useState('');
+  const clearGuard = useDirtyNavigation(!!priority || !!technician, true);
   const manager = ['administrador', 'supervisor'].includes(session?.user.role ?? '');
   const ticket = useQuery({
     queryKey: ['ticket', id],
@@ -50,7 +52,10 @@ export function TicketPreview({ id, onClose }: { id: string; onClose: () => void
       title="Vista rápida de ticket"
       drawer
       dirty={!!priority || !!technician}
-      onClose={onClose}
+      onClose={() => {
+        clearGuard();
+        onClose();
+      }}
     >
       {ticket.isPending ? (
         <p role="status">Cargando ticket…</p>

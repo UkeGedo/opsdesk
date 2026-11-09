@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Surface } from '../workspace/surface';
 import { useDirtyNavigation } from '../workspace/navigation-guard';
 import { RowActions } from '../workspace/row-actions';
+import { useViewState } from '../workspace/workspace-memory';
 type Asset = {
   id: string;
   name: string;
@@ -19,13 +20,20 @@ export function Assets() {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const manager = ['administrador', 'supervisor'].includes(session?.user.role ?? '');
-  const [techSearch, setTechSearch] = useState(''),
-    [locationSearch, setLocationSearch] = useState('');
-  const [page, setPage] = useState(1),
-    [search, setSearch] = useState(() => new URLSearchParams(location.search).get('q') ?? '');
+  const [techSearch, setTechSearch] = useViewState('assets.technicianSearch', ''),
+    [locationSearch, setLocationSearch] = useViewState('assets.locationSearch', '');
+  const [page, setPage] = useViewState('assets.page', 1),
+    [search, setSearch] = useViewState(
+      'assets.search',
+      () => new URLSearchParams(location.search).get('q') ?? '',
+    );
   useEffect(() => {
-    setSearch(new URLSearchParams(location.search).get('q') ?? '');
-  }, [location.search]);
+    const incoming = new URLSearchParams(location.search).get('q');
+    if (incoming !== null) {
+      setSearch(incoming);
+      setPage(1);
+    }
+  }, [location.search, setSearch, setPage]);
   useEffect(() => {
     if (location.hash === '#equipos') document.getElementById('equipos')?.scrollIntoView();
   }, [location.hash]);

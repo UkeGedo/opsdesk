@@ -23,7 +23,7 @@ export function WorkTabs() {
   const navigate = useNavigate();
   const { session } = useSession();
   const storageKey = `opsdesk-tabs:${session?.user.id ?? ''}`;
-  const pendingClose = useRef('');
+  const handledClose = useRef(new Set<string>());
   const [tabs, setTabs] = useState<Tab[]>(() => {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem(storageKey) ?? '[]');
@@ -49,11 +49,17 @@ export function WorkTabs() {
   }, [tabs, storageKey]);
   useEffect(() => {
     const { pathname, search, hash } = location;
+    const requestedClose = (location.state as { closedWorkspaceTab?: unknown } | null)
+      ?.closedWorkspaceTab;
+    const closed =
+      typeof requestedClose === 'string' &&
+      requestedClose !== pathname &&
+      !handledClose.current.has(location.key)
+        ? requestedClose
+        : null;
+    if (closed) handledClose.current.add(location.key);
     setTabs((current) => {
-      if (pendingClose.current && pendingClose.current !== pathname) {
-        current = current.filter((tab) => tab.key !== pendingClose.current);
-        pendingClose.current = '';
-      }
+      if (closed) current = current.filter((tab) => tab.key !== closed);
       const next = { key: pathname, href: pathname + search + hash, label: labelFor(pathname) };
       const index = current.findIndex((tab) => tab.key === pathname);
       if (index < 0) return [...current.slice(-7), next];
@@ -64,8 +70,7 @@ export function WorkTabs() {
   function close(tab: Tab) {
     const remaining = tabs.filter((entry) => entry.key !== tab.key);
     if (tab.key === location.pathname) {
-      pendingClose.current = tab.key;
-      navigate(remaining.at(-1)?.href ?? '/panel');
+      navigate(remaining.at(-1)?.href ?? '/panel', { state: { closedWorkspaceTab: tab.key } });
     } else setTabs(remaining);
   }
   return (

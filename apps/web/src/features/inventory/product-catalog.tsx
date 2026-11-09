@@ -2,17 +2,18 @@ import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
 import { useDirtyNavigation } from '../workspace/navigation-guard';
+import { useViewState } from '../workspace/workspace-memory';
 type Product = { id: string; name: string; unit: string; minimum: number; updatedAt: string };
 type LowProduct = Product & { quantity: number };
 export function ProductCatalog() {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const manager = ['administrador', 'supervisor'].includes(session?.user.role ?? '');
-  const [page, setPage] = useState(1);
-  const [lowPage, setLowPage] = useState(1);
+  const [page, setPage] = useViewState('catalog.page', 1);
+  const [lowPage, setLowPage] = useViewState('catalog.lowPage', 1);
   const [version, setVersion] = useState('');
-  const [q, setQ] = useState(''),
-    [selected, setSelected] = useState(''),
+  const [q, setQ] = useViewState('catalog.search', '');
+  const [selected, setSelected] = useState(''),
     [name, setName] = useState(''),
     [unit, setUnit] = useState(''),
     [minimum, setMinimum] = useState(0);

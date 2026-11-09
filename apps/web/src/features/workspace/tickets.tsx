@@ -8,6 +8,7 @@ import { ErrorBox, labels, LoadingRows, TicketTable, useTickets } from './shared
 import { TicketPreview } from './ticket-preview';
 import { Surface } from './surface';
 import { TicketSplit } from './ticket-split';
+import { useViewState } from './workspace-memory';
 export function Tickets() {
   const { request, session } = useSession();
   const { hash } = useLocation();
@@ -15,7 +16,11 @@ export function Tickets() {
   useEffect(() => {
     if (hash === '#nueva-solicitud') document.getElementById('nueva-solicitud')?.scrollIntoView();
   }, [hash]);
-  const [search, setSearch] = useState(() => params.get('q') ?? '');
+  const [search, setSearch] = useViewState(
+    'tickets.search',
+    () => params.get('q') ?? '',
+    params.has('q'),
+  );
   const [createOpen, setCreateOpen] = useState(false);
   const [createDirty, setCreateDirty] = useState(false);
   const [splitMode, setSplitMode] = useState(() => {
@@ -51,17 +56,34 @@ export function Tickets() {
       { replace: true },
     );
   }
-  const [page, setPage] = useState(() =>
-      Math.max(1, Math.min(10000, Number(params.get('page')) || 1)),
+  const [page, setPage] = useViewState(
+      'tickets.page',
+      () => Math.max(1, Math.min(10000, Number(params.get('page')) || 1)),
+      params.has('page'),
     ),
-    [status, setStatus] = useState(() => params.get('status') ?? ''),
-    [assignedTo, setAssignedTo] = useState(() => params.get('assignedTo') ?? '');
-  const [sort, setSort] = useState(() =>
-    ['createdAt', 'ticketNumber', 'title', 'priority'].includes(params.get('sort') ?? '')
-      ? params.get('sort')!
-      : 'createdAt',
+    [status, setStatus] = useViewState(
+      'tickets.status',
+      () => params.get('status') ?? '',
+      params.has('status'),
+    ),
+    [assignedTo, setAssignedTo] = useViewState(
+      'tickets.assignedTo',
+      () => params.get('assignedTo') ?? '',
+      params.has('assignedTo'),
+    );
+  const [sort, setSort] = useViewState(
+    'tickets.sort',
+    () =>
+      ['createdAt', 'ticketNumber', 'title', 'priority'].includes(params.get('sort') ?? '')
+        ? params.get('sort')!
+        : 'createdAt',
+    params.has('sort'),
   );
-  const [order, setOrder] = useState(() => (params.get('order') === 'asc' ? 'asc' : 'desc'));
+  const [order, setOrder] = useViewState(
+    'tickets.order',
+    () => (params.get('order') === 'asc' ? 'asc' : 'desc'),
+    params.has('order'),
+  );
   const [compact, setCompact] = useState(() => {
     try {
       return localStorage.getItem('opsdesk-ticket-density') === 'compact';

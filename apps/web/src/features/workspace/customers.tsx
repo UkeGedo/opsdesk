@@ -8,18 +8,23 @@ import { CreateCustomer, SetupCustomers } from '../customers/setup-customers';
 import { type Customer, type List, ErrorBox, LoadingRows } from './shared';
 import { Surface } from './surface';
 import { RowActions } from './row-actions';
+import { useViewState } from './workspace-memory';
 export function Customers() {
   const { request, session } = useSession();
   const location = useLocation();
-  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('q') ?? '');
+  const [search, setSearch] = useViewState(
+    'customers.search',
+    () => new URLSearchParams(location.search).get('q') ?? '',
+  );
   useEffect(() => {
-    setSearch(new URLSearchParams(location.search).get('q') ?? '');
-  }, [location.search]);
+    const incoming = new URLSearchParams(location.search).get('q');
+    if (incoming !== null) setSearch(incoming);
+  }, [location.search, setSearch]);
   useEffect(() => {
     if (location.hash === '#registrar-cliente')
       document.getElementById('registrar-cliente')?.scrollIntoView();
   }, [location.hash]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useViewState('customers.page', 1);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [viewing, setViewing] = useState<Customer | null>(null);
   const [dirty, setDirty] = useState(false);

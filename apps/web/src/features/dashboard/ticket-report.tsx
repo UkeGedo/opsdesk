@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useSession } from '../../app/security';
+import { useViewState } from '../workspace/workspace-memory';
 type Report = {
   total: number;
   resolved: number;
@@ -17,9 +18,9 @@ type Report = {
 };
 export function TicketReport() {
   const { request, session } = useSession();
-  const [from, setFrom] = useState(''),
-    [to, setTo] = useState(''),
-    [error, setError] = useState('');
+  const [from, setFrom] = useViewState('dashboard.from', ''),
+    [to, setTo] = useViewState('dashboard.to', '');
+  const [error, setError] = useState('');
   const filters = {
     ...(from ? { from: new Date(`${from}T00:00:00.000Z`).toISOString() } : {}),
     ...(to ? { to: new Date(Date.parse(`${to}T00:00:00.000Z`) + 86400000).toISOString() } : {}),

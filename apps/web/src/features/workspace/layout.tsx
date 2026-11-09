@@ -19,7 +19,23 @@ import { Notifications } from './notifications';
 import { ThemeToggle } from '../../app/theme';
 import { CommandPalette } from './command-palette';
 import { WorkTabs } from './work-tabs';
-import { NavigationGuard } from './navigation-guard';
+import { NavigationGuard, useConfirmDirty } from './navigation-guard';
+import { WorkspaceScroll } from './workspace-scroll';
+function LogoutControl({ logout, collapsed }: { logout: () => Promise<void>; collapsed: boolean }) {
+  const confirmDiscard = useConfirmDirty();
+  return (
+    <button
+      onClick={() => {
+        if (confirmDiscard()) void logout();
+      }}
+      aria-label="Cerrar sesión"
+      title={collapsed ? 'Cerrar sesión' : undefined}
+    >
+      <LogOut size={17} />
+      <span>Cerrar sesión</span>
+    </button>
+  );
+}
 export function Workspace() {
   const { session, loading, setSession, request } = useSession();
   const [menu, setMenu] = useState(false);
@@ -85,6 +101,7 @@ export function Workspace() {
   }
   return (
     <NavigationGuard>
+      <WorkspaceScroll />
       {
         <div className={`work ${collapsed ? 'sidebar-collapsed' : ''}`}>
           <LiveUpdates userId={session.user.id} />
@@ -154,14 +171,7 @@ export function Workspace() {
                 <UserRound size={17} />
                 <span>Mi perfil</span>
               </Link>
-              <button
-                onClick={logout}
-                aria-label="Cerrar sesión"
-                title={collapsed ? 'Cerrar sesión' : undefined}
-              >
-                <LogOut size={17} />
-                <span>Cerrar sesión</span>
-              </button>
+              <LogoutControl logout={logout} collapsed={collapsed} />
               <button
                 type="button"
                 className="sidebar-collapse"

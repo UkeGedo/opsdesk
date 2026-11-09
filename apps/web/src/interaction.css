@@ -277,6 +277,23 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-popover);
 }
+.session-expired-banner {
+  position: fixed;
+  z-index: 35;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--danger);
+  box-shadow: var(--shadow-popover);
+}
+.session-expired-banner button {
+  margin-top: 10px;
+}
 .notice-toast a {
   display: grid;
   gap: 6px;

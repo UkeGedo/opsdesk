@@ -63,6 +63,11 @@ test('ventanas, búsqueda global y contexto de tickets', async ({ page }) => {
   ).toEqual([]);
   await expect(page).toHaveURL(/ticket=/);
   await drawer.getByLabel('Modificar prioridad').selectOption('alta');
+  await page.evaluate(() => history.back());
+  const backWarning = page.getByRole('dialog', { name: 'Cambios sin guardar' });
+  await expect(backWarning).toBeVisible();
+  await backWarning.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(drawer.getByLabel('Modificar prioridad')).toHaveValue('alta');
   await page.keyboard.press('Escape');
   await expect(drawer.getByText('¿Descartar los cambios sin guardar?')).toBeVisible();
   await drawer.getByRole('button', { name: 'Seguir editando' }).click();
@@ -165,6 +170,21 @@ test('vista dividida, pestañas y protección de navegación', async ({ page }) 
   await expect(page).toHaveURL(/ticket=/);
   await page.getByRole('button', { name: 'Cerrar detalle seleccionado' }).click();
   await page.getByLabel('Asunto', { exact: true }).fill('Sin guardar');
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+  await expect(page.getByLabel('Asunto', { exact: true })).toHaveValue('Sin guardar');
+  await page
+    .getByRole('navigation', { name: 'Pestañas de trabajo' })
+    .getByRole('button', { name: 'Cerrar Tickets' })
+    .click();
+  const closeWarning = page.getByRole('dialog', { name: 'Cambios sin guardar' });
+  await expect(closeWarning).toBeVisible();
+  await closeWarning.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Pestañas de trabajo' })
+      .getByRole('button', { name: 'Tickets', exact: true }),
+  ).toBeVisible();
   await page.getByRole('link', { name: 'Clientes', exact: true }).click();
   const warning = page.getByRole('dialog', { name: 'Cambios sin guardar' });
   await expect(warning).toBeVisible();
@@ -173,6 +193,11 @@ test('vista dividida, pestañas y protección de navegación', async ({ page }) 
   await page.getByRole('link', { name: 'Clientes', exact: true }).click();
   await warning.getByRole('button', { name: 'Descartar y salir' }).click();
   await expect(page).toHaveURL(/\/clientes$/);
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Pestañas de trabajo' })
+      .getByRole('button', { name: 'Tickets', exact: true }),
+  ).toBeVisible();
   await page.reload();
   await expect(
     page
@@ -192,4 +217,60 @@ test('vista dividida, pestañas y protección de navegación', async ({ page }) 
   await expect(profileWarning).toBeVisible();
   await profileWarning.getByRole('button', { name: 'Seguir editando' }).click();
   await expect(page.getByLabel('Nombre completo')).toHaveValue('Nombre sin guardar');
+});
+
+test('las pestañas restauran filtros de módulos y protegen selecciones sin guardar', async ({
+  page,
+}) => {
+  test.skip(process.env.PHASE5_E2E !== '1', 'Requiere demostración aislada.');
+  const base = process.env.E2E_BASE_URL;
+  if (
+    !base ||
+    !['localhost', '127.0.0.1'].includes(new URL(base).hostname) ||
+    process.env.E2E_ISOLATED !== 'yes' ||
+    !process.env.E2E_PASSWORD
+  )
+    throw new Error('Se requiere un entorno aislado local.');
+  await page.goto('/acceso');
+  await page.getByLabel('Correo electrónico').fill('admin@example.test');
+  await page.getByLabel('Contraseña', { exact: true }).fill(process.env.E2E_PASSWORD!);
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page.getByRole('heading', { name: /Hola/ })).toBeVisible();
+  await page.getByRole('link', { name: 'Clientes', exact: true }).click();
+  await page.getByLabel('Buscar clientes').fill('Empresa');
+  await page.getByRole('link', { name: 'Tareas', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Mostrar', exact: true }).selectOption('pendiente');
+  await page.evaluate(() => window.scrollTo(0, 500));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+  const tabs = page.getByRole('navigation', { name: 'Pestañas de trabajo' });
+  await page.getByRole('link', { name: 'Clientes', exact: true }).click();
+  await expect(page.getByLabel('Buscar clientes')).toHaveValue('Empresa');
+  await tabs.getByRole('button', { name: 'Tareas', exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Mostrar', exact: true })).toHaveValue(
+    'pendiente',
+  );
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+  await page.getByRole('button', { name: 'Editar tarea' }).first().click();
+  await expect(page.getByRole('combobox', { name: 'Mostrar', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await page.getByRole('link', { name: 'Mi perfil' }).click();
+  await expect(page.getByRole('heading', { name: 'Tu perfil' })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('combobox', { name: 'Mostrar', exact: true })).toHaveValue(
+    'pendiente',
+  );
+  await page.getByRole('link', { name: 'Inventario', exact: true }).click();
+  const movement = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Registrar movimiento', exact: true }) });
+  await expect(movement.getByLabel('Producto').locator('option')).not.toHaveCount(1);
+  await movement.getByLabel('Producto').selectOption({ index: 1 });
+  await page.getByRole('link', { name: 'Tickets', exact: true }).click();
+  const warning = page.getByRole('dialog', { name: 'Cambios sin guardar' });
+  await expect(warning).toBeVisible();
+  await warning.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(movement.getByLabel('Producto')).not.toHaveValue('');
+  await page.getByRole('link', { name: 'Tickets', exact: true }).click();
+  await warning.getByRole('button', { name: 'Descartar y salir' }).click();
+  await expect(page).toHaveURL(/\/tickets$/);
 });

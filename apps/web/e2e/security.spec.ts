@@ -32,6 +32,19 @@ test('un fallo de red al iniciar sesión muestra un mensaje comprensible', async
   await expect(page).toHaveURL(/\/acceso$/);
 });
 
+test('acceso y recuperación protegen los campos antes de cambiar de ruta', async ({ page }) => {
+  await page.goto('/acceso');
+  await page.getByLabel('Correo electrónico').fill('demo@example.test');
+  await page.getByRole('link', { name: '¿Olvidaste tu contraseña?' }).click();
+  const warning = page.getByRole('dialog', { name: 'Cambios sin guardar' });
+  await expect(warning).toBeVisible();
+  await warning.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(page.getByLabel('Correo electrónico')).toHaveValue('demo@example.test');
+  await page.getByRole('link', { name: '¿Olvidaste tu contraseña?' }).click();
+  await warning.getByRole('button', { name: 'Descartar y salir' }).click();
+  await expect(page).toHaveURL(/\/recuperar$/);
+});
+
 test('sesión vencida exige volver a iniciar sesión', async ({ page }) => {
   const base = process.env.E2E_BASE_URL;
   test.skip(process.env.PHASE5_E2E !== '1', 'Requiere demostración aislada.');
@@ -51,6 +64,39 @@ test('sesión vencida exige volver a iniciar sesión', async ({ page }) => {
   await page.goto('/clientes');
   await expect(page).toHaveURL(/\/acceso$/);
   await expect(page.getByRole('alert')).toContainText('Tu sesión no está activa');
+});
+
+test('sesión vencida conserva el formulario pendiente para poder copiarlo', async ({ page }) => {
+  const base = process.env.E2E_BASE_URL;
+  test.skip(process.env.PHASE5_E2E !== '1', 'Requiere demostración aislada.');
+  if (
+    !base ||
+    !['127.0.0.1', 'localhost'].includes(new URL(base).hostname) ||
+    process.env.E2E_ISOLATED !== 'yes' ||
+    !process.env.E2E_PASSWORD
+  )
+    throw new Error('La prueba requiere un entorno local aislado.');
+  await page.goto('/acceso');
+  await page.getByLabel('Correo electrónico').fill('admin@example.test');
+  await page.getByLabel('Contraseña', { exact: true }).fill(process.env.E2E_PASSWORD);
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await page.getByRole('link', { name: 'Tickets', exact: true }).click();
+  await page.getByLabel('Asunto', { exact: true }).fill('Borrador que debe conservarse');
+  await page.route('**/api/v1/tickets?*', (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'Sesión vencida' } }),
+    }),
+  );
+  await page.getByLabel('Buscar tickets').fill('forzar consulta');
+  await expect(page.getByRole('alert').filter({ hasText: 'Tu sesión venció' })).toBeVisible();
+  await expect(page.getByLabel('Asunto', { exact: true })).toHaveValue(
+    'Borrador que debe conservarse',
+  );
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Ir a iniciar sesión' }).click();
+  await expect(page).toHaveURL(/\/acceso$/);
 });
 
 test('sesión real conserva acceso, valida contraseña y cierra sesión', async ({ page }) => {
@@ -83,6 +129,7 @@ test('sesión real conserva acceso, valida contraseña y cierra sesión', async 
   await page.getByRole('button', { name: 'Cambiar contraseña' }).click();
   await expect(page.getByRole('status')).toContainText('Credenciales inválidas.');
   await expect(page.getByRole('heading', { name: 'Tu perfil' })).toBeVisible();
+  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
   await expect(page).toHaveURL(/\/acceso$/);
 });

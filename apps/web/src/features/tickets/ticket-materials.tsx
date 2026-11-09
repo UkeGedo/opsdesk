@@ -24,7 +24,13 @@ export function TicketMaterials({
     [locationId, setLocation] = useState(''),
     [quantity, setQuantity] = useState(1),
     [reason, setReason] = useState('');
-  useDirtyNavigation(!!reason || quantity !== 1);
+  const savedSelection = useRef({ productId: '', locationId: '' });
+  useDirtyNavigation(
+    !!reason ||
+      quantity !== 1 ||
+      productId !== savedSelection.current.productId ||
+      locationId !== savedSelection.current.locationId,
+  );
   const key = useRef(crypto.randomUUID());
   const products = useQuery({
     queryKey: ['inventory', 'product-options', productSearch],
@@ -55,6 +61,7 @@ export function TicketMaterials({
       }),
     onSuccess: () => {
       key.current = crypto.randomUUID();
+      savedSelection.current = { productId, locationId };
       setReason('');
       setQuantity(1);
       void cache.invalidateQueries({ queryKey: ['history', ticketId] });

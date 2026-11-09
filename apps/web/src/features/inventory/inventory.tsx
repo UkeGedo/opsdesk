@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
 import { useDirtyNavigation } from '../workspace/navigation-guard';
+import { useViewState } from '../workspace/workspace-memory';
 type Product = { id: string; name: string; unit: string; minimum: number };
 type Location = { id: string; name: string };
 type Stock = {
@@ -32,8 +33,8 @@ export function Inventory() {
   const [unit, setUnit] = useState('unidad');
   const [minimum, setMinimum] = useState(0);
   const [locationName, setLocationName] = useState('');
-  const [productSearch, setProductSearch] = useState(''),
-    [locationSearch, setLocationSearch] = useState('');
+  const [productSearch, setProductSearch] = useViewState('inventory.productSearch', ''),
+    [locationSearch, setLocationSearch] = useViewState('inventory.locationSearch', '');
   const [product, setProduct] = useState('');
   const [source, setSource] = useState('');
   const [destination, setDestination] = useState('');
@@ -41,11 +42,31 @@ export function Inventory() {
   const [quantity, setQuantity] = useState(1);
   const [reason, setReason] = useState('');
   const [ticket, setTicket] = useState('');
+  const movementBaseline = useRef({
+    product: '',
+    source: '',
+    destination: '',
+    kind: manager ? 'entrada' : 'salida',
+  });
+  const movementChanged =
+    product !== movementBaseline.current.product ||
+    source !== movementBaseline.current.source ||
+    destination !== movementBaseline.current.destination ||
+    kind !== movementBaseline.current.kind;
   useDirtyNavigation(
-    !!(name || locationName || reason || ticket || minimum || quantity !== 1 || unit !== 'unidad'),
+    !!(
+      name ||
+      locationName ||
+      reason ||
+      ticket ||
+      minimum ||
+      quantity !== 1 ||
+      unit !== 'unidad' ||
+      movementChanged
+    ),
   );
-  const [stockPage, setStockPage] = useState(1),
-    [movementPage, setMovementPage] = useState(1);
+  const [stockPage, setStockPage] = useViewState('inventory.stockPage', 1),
+    [movementPage, setMovementPage] = useViewState('inventory.movementPage', 1);
   const key = useRef(crypto.randomUUID());
   const products = useQuery({
     queryKey: ['inventory', 'products'],
@@ -116,6 +137,7 @@ export function Inventory() {
       }),
     onSuccess: () => {
       key.current = crypto.randomUUID();
+      movementBaseline.current = { product, source, destination, kind };
       setReason('');
       setTicket('');
       setQuantity(1);
