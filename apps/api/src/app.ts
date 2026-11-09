@@ -1,10 +1,11 @@
 import type { Change } from './realtime.js';
+import { createDomainEventBus, type DomainEventBus } from './domain-events.js';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import pino from 'pino';
 import helmet from 'helmet';
 import type { Db } from './db.js';
 import { inventoryProducts, taskNotifications, ticketAttachments, users } from './schema.js';
-import { auth } from './auth.js';
+import { auth } from './modules/identity/auth.js';
 import { errorHandler, requestId, notFound } from './common.js';
 import { routes } from './routes.js';
 import { rateLimit } from './security.js';
@@ -31,6 +32,7 @@ export function createApp(
   options?: {
     attachmentDir?: string;
     publish?: (change: Change) => void;
+    domainEvents?: DomainEventBus;
     onRequestLog?: (entry: {
       requestId: string;
       method: string;
@@ -116,7 +118,16 @@ export function createApp(
   app.get('/api/v1/openapi.json', security.requireSession, security.admin, (_req, res) =>
     res.json(openapi),
   );
-  app.use('/api/v1', security.requireSession, routes(db, options?.attachmentDir, options?.publish));
+  app.use(
+    '/api/v1',
+    security.requireSession,
+    routes(
+      db,
+      options?.attachmentDir,
+      options?.publish,
+      options?.domainEvents ?? createDomainEventBus(),
+    ),
+  );
   app.use((_req, _res, next) => next(notFound()));
   app.use(errorHandler);
   return app;

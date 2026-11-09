@@ -18,6 +18,7 @@ import {
 } from './schema.js';
 import { eq } from 'drizzle-orm';
 import { digest, randomToken } from './security.js';
+import { createDomainEventBus, type DomainEvent } from './domain-events.js';
 const dir = mkdtempSync(join(tmpdir(), 'opsdesk-security-'));
 process.env.MAIL_MODE = 'file';
 process.env.MAIL_DIR = join(dir, 'mail');
@@ -26,7 +27,12 @@ const { createApp } = await import('./app.js');
 const connection = openDatabase(join(dir, 'test.db'));
 const { db, sqlite } = connection;
 migrate(db, { migrationsFolder: './drizzle' });
-const app = createApp(db);
+const bus = createDomainEventBus();
+const domainEvents: DomainEvent[] = [];
+bus.subscribe((event) => {
+  domainEvents.push(event);
+});
+const app = createApp(db, { domainEvents: bus });
 const admin = request.agent(app),
   supervisor = request.agent(app),
   technician = request.agent(app),
@@ -270,6 +276,12 @@ describe('seguridad y autorización', () => {
       .set('X-CSRF-Token', supervisorCsrf)
       .send({ technicianId: ids.technician, expectedUpdatedAt: created.body.data.updatedAt });
     expect(assigned.status).toBe(200);
+    expect(domainEvents).toContainEqual({
+      type: 'ticket.assigned',
+      ticketId: created.body.data.id,
+      technicianId: ids.technician,
+      actorId: ids.supervisor,
+    });
     const staleStatus = await technician
       .patch(`/api/v1/tickets/${created.body.data.id}`)
       .set('X-CSRF-Token', techCsrf)
@@ -295,6 +307,11 @@ describe('seguridad y autorización', () => {
           })
       ).status,
     ).toBe(200);
+    expect(domainEvents).toContainEqual({
+      type: 'ticket.resolved',
+      ticketId: created.body.data.id,
+      actorId: ids.technician,
+    });
     const result = await client.get(`/api/v1/tickets/${created.body.data.id}`);
     expect(result.body.data.resolution).toBe('Equipo reparado');
     expect((await otherClient.get(`/api/v1/tickets/${created.body.data.id}`)).status).toBe(404);

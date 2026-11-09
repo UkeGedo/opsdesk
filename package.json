@@ -9,6 +9,7 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "format:check": "prettier --check .",
+    "check:cycles": "node scripts/check-cycles.mjs",
     "test:rotation": "node --test scripts/rotate-backups.test.mjs"
   },
   "devDependencies": {

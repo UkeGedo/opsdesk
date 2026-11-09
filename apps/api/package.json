@@ -16,6 +16,7 @@
     "perf:smoke": "node scripts/load-test.mjs"
   },
   "dependencies": {
+    "@opsdesk/shared": "workspace:*",
     "argon2": "^0.45.2",
     "better-sqlite3": "^12.4.0",
     "drizzle-orm": "^0.45.2",

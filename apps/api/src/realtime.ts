@@ -6,7 +6,7 @@ import { sessions, users } from './schema.js';
 import { config } from './config.js';
 import { digest } from './security.js';
 import { now } from './common.js';
-import { visibleTicket } from './policies.js';
+import { visibleTicket } from './modules/identity/policies.js';
 export type Change = {
   actorId: string;
   ticketId?: string;
@@ -41,7 +41,8 @@ export function realtime(http: HttpServer, db: Db) {
       .get();
     if (
       !row ||
-      Date.now() - Date.parse(row.session.lastSeenAt ?? row.session.createdAt) > 30 * 60 * 1000
+      Date.now() - Date.parse(row.session.lastSeenAt ?? row.session.createdAt) >
+        config.SESSION_IDLE_MINUTES * 60 * 1000
     )
       return null;
     return row.user;

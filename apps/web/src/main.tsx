@@ -19,15 +19,25 @@ import './styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider, Login, Recovery, Reset, Profile, Denied } from './app/security';
 
-const Workspace = lazy(() => import('./app/workspace').then((m) => ({ default: m.Workspace })));
-const Dashboard = lazy(() => import('./app/workspace').then((m) => ({ default: m.Dashboard })));
-const Tickets = lazy(() => import('./app/workspace').then((m) => ({ default: m.Tickets })));
-const TicketDetail = lazy(() =>
-  import('./app/workspace').then((m) => ({ default: m.TicketDetail })),
+const Workspace = lazy(() =>
+  import('./features/workspace/layout').then((m) => ({ default: m.Workspace })),
 );
-const Customers = lazy(() => import('./app/workspace').then((m) => ({ default: m.Customers })));
-const Inventory = lazy(() => import('./app/inventory').then((m) => ({ default: m.Inventory })));
-const Tasks = lazy(() => import('./app/tasks').then((m) => ({ default: m.Tasks })));
+const Dashboard = lazy(() =>
+  import('./features/workspace/dashboard').then((m) => ({ default: m.Dashboard })),
+);
+const Tickets = lazy(() =>
+  import('./features/workspace/tickets').then((m) => ({ default: m.Tickets })),
+);
+const TicketDetail = lazy(() =>
+  import('./features/workspace/ticket-detail').then((m) => ({ default: m.TicketDetail })),
+);
+const Customers = lazy(() =>
+  import('./features/workspace/customers').then((m) => ({ default: m.Customers })),
+);
+const Inventory = lazy(() =>
+  import('./features/inventory/inventory').then((m) => ({ default: m.Inventory })),
+);
+const Tasks = lazy(() => import('./features/tasks/tasks').then((m) => ({ default: m.Tasks })));
 
 function Logo() {
   return (

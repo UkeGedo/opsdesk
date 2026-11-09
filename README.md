@@ -19,13 +19,15 @@ La captura anterior procede de una base ficticia local. La [captura de inventari
 React, TypeScript, Vite, TanStack Query, React Router, Recharts y Socket.IO en el navegador; Node.js, Express, Zod, Drizzle ORM, SQLite (`better-sqlite3`) y Socket.IO en el servidor. Vitest, Supertest, Playwright y Axe se usan en pruebas. Nginx sirve la interfaz y hace proxy a la API y WebSocket. Las rutas comprueban permisos; los servicios de dominio y las transacciones conservan las reglas operativas.
 
 ```text
-apps/api/             API, dominio, migraciones y pruebas
+apps/api/             API, módulos de negocio, migraciones y pruebas
 apps/web/             Interfaz React y pruebas Playwright
-packages/shared/      Paquete compartido
+packages/shared/      Contratos de tipos compartidos
 infrastructure/       Imágenes y configuración Nginx
 docs/                 Arquitectura, operación, seguridad y portafolio
 scripts/              Rotación de copias y pruebas
 ```
+
+La [arquitectura](docs/architecture/overview.md), las [decisiones](docs/architecture/decisions.md) y la [guía de módulos](docs/architecture/module-guide.md) describen la organización y sus límites.
 
 ## Requisitos y ejecución local
 
@@ -57,6 +59,7 @@ En desarrollo `MAIL_MODE=file` guarda mensajes ficticios localmente; no envía c
 pnpm format:check
 pnpm lint
 pnpm typecheck
+pnpm check:cycles
 pnpm test
 pnpm --filter @opsdesk/api test:coverage
 pnpm test:rotation

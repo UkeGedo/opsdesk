@@ -9,14 +9,20 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { openDatabase } from './db.js';
 import { users } from './schema.js';
 import { createApp } from './app.js';
-import { Domain } from './domain.js';
+import { TicketService } from './modules/tickets/service.js';
+import { createDomainEventBus, type DomainEvent } from './domain-events.js';
 import { createRequire } from 'node:module';
 const dir = mkdtempSync(join(tmpdir(), 'opsdesk-test-'));
 const path = join(dir, 'test.db');
 const connection = openDatabase(path);
 const { db, sqlite } = connection;
 migrate(db, { migrationsFolder: './drizzle' });
-const app = createApp(db, { attachmentDir: join(dir, 'attachments') });
+const domainEvents = createDomainEventBus();
+const recordedEvents: DomainEvent[] = [];
+domainEvents.subscribe((event) => {
+  recordedEvents.push(event);
+});
+const app = createApp(db, { attachmentDir: join(dir, 'attachments'), domainEvents });
 const admin = request.agent(app);
 const limited = request.agent(app);
 let csrf = '';
@@ -167,6 +173,28 @@ describe('API persistente', () => {
       ).status,
     ).toBe(200);
   });
+  it('emite eventos de cliente solo después de confirmar los cambios', async () => {
+    const original = await admin.get(`/api/v1/customers/${customer}`);
+    recordedEvents.length = 0;
+    const first = await admin
+      .patch(`/api/v1/customers/${customer}`)
+      .set('X-CSRF-Token', csrf)
+      .send({ phone: '555-0200', expectedUpdatedAt: original.body.data.updatedAt });
+    expect(first.status).toBe(200);
+    expect(recordedEvents).toHaveLength(1);
+    expect(recordedEvents[0]).toMatchObject({
+      type: 'customer.updated',
+      customerId: customer,
+      actorId: expect.any(String),
+    });
+    expect((await admin.get(`/api/v1/customers/${customer}`)).body.data.phone).toBe('555-0200');
+    const stale = await admin
+      .patch(`/api/v1/customers/${customer}`)
+      .set('X-CSRF-Token', csrf)
+      .send({ phone: '555-0201', expectedUpdatedAt: original.body.data.updatedAt });
+    expect(stale.status).toBe(409);
+    expect(recordedEvents).toHaveLength(1);
+  });
   it('conserva integridad y genera historial de ticket', async () => {
     const c = await admin
       .post('/api/v1/categories')
@@ -191,6 +219,9 @@ describe('API persistente', () => {
     expect(created.status).toBe(201);
     expect(created.body.data.ticketNumber).toBe(1);
     ticket = created.body.data.id;
+    expect(recordedEvents).toContainEqual(
+      expect.objectContaining({ type: 'ticket.created', ticketId: ticket }),
+    );
     expect(
       (
         await admin
@@ -302,7 +333,7 @@ describe('API persistente', () => {
     expect(JSON.stringify(entries)).not.toContain('contraseña');
   });
   it('revierte número y ticket si falla la escritura transaccional', () => {
-    const service = new Domain(db);
+    const service = new TicketService(db);
     expect(() =>
       service.createTicket(
         {
@@ -341,9 +372,15 @@ describe('API persistente', () => {
       quantity: 5,
       reason: 'Compra',
     };
+    const eventsBefore = recordedEvents.filter(
+      (event) => event.type === 'inventory.movement',
+    ).length;
     expect((await post('movements', entry)).status).toBe(201);
     expect((await post('movements', entry)).status).toBe(200);
     expect((await post('movements', { ...entry, quantity: 6 })).status).toBe(409);
+    expect(recordedEvents.filter((event) => event.type === 'inventory.movement')).toHaveLength(
+      eventsBefore + 1,
+    );
     const transfer = {
       requestId: randomUUID(),
       productId: entry.productId,
@@ -582,6 +619,9 @@ describe('API persistente', () => {
       .send({ expectedUpdatedAt: rescheduled.body.data.updatedAt, status: 'completada' });
     expect(completed.status).toBe(200);
     expect(completed.body.data.completedAt).toBeTruthy();
+    expect(recordedEvents).toContainEqual(
+      expect.objectContaining({ type: 'task.completed', taskId: row.id }),
+    );
     const history = await limited.get(`/api/v1/tasks/${row.id}/history`);
     expect(history.body.data).toHaveLength(4);
     expect((await limited.get('/api/v1/tasks?overdue=true')).body.data).toHaveLength(0);

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { AccountRole } from '@opsdesk/shared/contracts';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,7 +10,7 @@ type User = {
   id: string;
   fullName: string;
   email: string;
-  role: 'administrador' | 'supervisor' | 'tecnico' | 'cliente';
+  role: AccountRole;
   customerId?: string | null;
 };
 type Session = { user: User; csrf: string };

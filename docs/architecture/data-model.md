@@ -2,6 +2,8 @@
 
 Las tablas implementadas se definen en `apps/api/src/schema.ts` y las migraciones en `apps/api/drizzle/`. Usan UUID como identificador principal; los tickets tienen además un número secuencial. SQLite aplica claves foráneas, comprobaciones y restricciones únicas. Las fechas de la aplicación se expresan como texto UTC ISO 8601.
 
+La reorganización de la fase 7 no modifica tablas ni añade migraciones: separa responsabilidades de aplicación y preserva las bases existentes. Los eventos internos en memoria no constituyen tablas ni sustituyen el historial y la auditoría persistentes.
+
 ```mermaid
 erDiagram
   USERS ||--o{ SESSIONS : posee

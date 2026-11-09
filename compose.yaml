@@ -9,6 +9,8 @@ services:
       DATABASE_PATH: /data/opsdesk.db
       ATTACHMENT_DIR: /data/attachments
       ATTACHMENT_MAX_BYTES: ${ATTACHMENT_MAX_BYTES:-5242880}
+      SESSION_MAX_MINUTES: ${SESSION_MAX_MINUTES:-480}
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-30}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
       MAIL_MODE: ${MAIL_MODE:-disabled}
       SMTP_HOST: ${SMTP_HOST:-}

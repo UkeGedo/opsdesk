@@ -5,7 +5,7 @@ Esta evaluación describe las comprobaciones realizadas en un entorno local aisl
 ## Resultados verificados
 
 - TypeScript y las comprobaciones de calidad del repositorio; la compilación y las pruebas completas requieren acceso al entorno local cuando el sandbox de Windows impide que esbuild lea la configuración de Vite.
-- 39 pruebas automatizadas de API y una prueba de rotación de copias. La cobertura de ocho archivos críticos seleccionados fue 85,97 % de líneas, 83,19 % de sentencias, 70,82 % de ramas y 90,64 % de funciones. No representa la cobertura de todo el repositorio.
+- 44 pruebas automatizadas de API y una prueba de rotación de copias. La cobertura de los módulos críticos seleccionados fue 85,99 % de líneas, 83,14 % de sentencias, 71,01 % de ramas y 90,44 % de funciones. No representa la cobertura de todo el repositorio.
 - Imagen Linux de producción: migraciones, semilla ficticia, arranque sin privilegios, comprobación de preparación, persistencia tras reinicio y ausencia de Vitest. Las pruebas de navegador usan exclusivamente una base local aislada: abarcan acceso, tickets entre roles, asignación, resolución, reconexión, inventario, creación y edición de clientes y comprobaciones automatizadas de accesibilidad.
 - Los 11 recorridos Playwright pasaron contra la versión actualizada en Compose. Se corrigió el foco de teclado en un gráfico oculto a lectores de pantalla, conservando la lista textual de datos. La prueba de accesibilidad espera a que el gráfico esté cargado antes de ejecutar axe.
 - Una copia SQLite en WAL se restauró y verificó con una base de prueba. La retención es simulada por defecto y tiene una prueba que comprueba su alcance. Los adjuntos requieren una copia coordinada independiente.

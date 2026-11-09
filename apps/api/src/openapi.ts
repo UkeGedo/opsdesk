@@ -1,8 +1,8 @@
-import { taskInput, taskPatchInput } from './tasks.js';
-import { movementInput } from './inventory.js';
+import { taskInput, taskPatchInput } from './modules/tasks/routes.js';
+import { movementInput } from './modules/inventory/routes.js';
 import { z } from 'zod';
 import { config } from './config.js';
-import { assignmentInput } from './assignments.js';
+import { assignmentInput } from './modules/tickets/assignments.js';
 import {
   categoryCreate,
   commentCreate,
@@ -12,7 +12,7 @@ import {
   ticketPatch,
   userCreate,
   userPatch,
-} from './domain.js';
+} from './domain-schemas.js';
 const examples = new Map<z.ZodType, object>([
   [
     userCreate,

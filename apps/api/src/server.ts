@@ -4,7 +4,7 @@ import { createApp } from './app.js';
 import { config } from './config.js';
 import { openDatabase } from './db.js';
 import pino from 'pino';
-import { cleanExpiredSessions } from './auth.js';
+import { cleanExpiredSessions } from './modules/identity/auth.js';
 const logger = pino();
 const { sqlite, db } = openDatabase();
 // Migrations are an explicit deployment step, never destructive startup synchronization.

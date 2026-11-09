@@ -1,0 +1,126 @@
+import { useQuery } from '@tanstack/react-query';
+import { Search } from 'lucide-react';
+import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { EditCustomer } from '../customers/edit-customer';
+import { useSession } from '../../app/security';
+import { SetupCustomers } from '../customers/setup-customers';
+import { type Customer, type List, ErrorBox } from './shared';
+export function Customers() {
+  const { request, session } = useSession();
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [editing, setEditing] = useState<Customer | null>(null);
+  const query = useQuery({
+    queryKey: ['customers', search, page],
+    queryFn: async () =>
+      (await request(
+        `/customers?limit=20&sort=name&page=${page}${search ? '&q=' + encodeURIComponent(search) : ''}`,
+      )) as List<Customer>,
+    enabled: !!session && ['administrador', 'supervisor'].includes(session.user.role),
+  });
+  if (session && !['administrador', 'supervisor'].includes(session.user.role))
+    return <Navigate to="/denegado" replace />;
+  return (
+    <>
+      <div className="work-heading">
+        <div>
+          <div className="work-overline">RELACIONES / ORGANIZACIONES</div>
+          <h1>Clientes</h1>
+          <p>La información de contacto de las organizaciones atendidas.</p>
+        </div>
+      </div>
+      <section className="work-section">
+        <div className="section-bar">
+          <div>
+            <h2>Directorio de clientes</h2>
+            <p>{query.data ? `${query.data.meta.total} resultados` : 'Clientes registrados'}</p>
+          </div>
+          <label className="work-search">
+            <Search size={17} />
+            <span className="sr-only">Buscar clientes</span>
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Buscar nombre o identificación"
+            />
+          </label>
+        </div>
+        {query.isPending ? (
+          <div className="work-empty" role="status">
+            Cargando clientes…
+          </div>
+        ) : query.error ? (
+          <ErrorBox error={query.error} />
+        ) : query.data?.data.length ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Correo</th>
+                  <th>Teléfono</th>
+                  <th>Estado</th>
+                  {session?.user.role === 'administrador' && <th>Acciones</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {query.data.data.map((c) => (
+                  <tr key={c.id}>
+                    <td className="table-title">{c.name}</td>
+                    <td>{c.email || '—'}</td>
+                    <td>{c.phone || '—'}</td>
+                    <td>
+                      <span className="work-badge">{c.status}</span>
+                    </td>
+                    {session?.user.role === 'administrador' && (
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => setEditing(c)}
+                          aria-label={`Editar ${c.name}`}
+                        >
+                          Editar
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="work-empty">
+            <strong>No hay clientes para mostrar.</strong>
+            <p>Los clientes registrados aparecerán aquí.</p>
+          </div>
+        )}
+        {query.data && query.data.meta.total > query.data.meta.limit && (
+          <nav aria-label="Paginación de clientes">
+            <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              Anterior
+            </button>
+            <span>
+              {' '}
+              Página {page} · {query.data.meta.total} resultados{' '}
+            </span>
+            <button
+              type="button"
+              disabled={page * query.data.meta.limit >= query.data.meta.total}
+              onClick={() => setPage(page + 1)}
+            >
+              Siguiente
+            </button>
+          </nav>
+        )}
+      </section>
+      {editing && (
+        <EditCustomer key={editing.id} customer={editing} onClose={() => setEditing(null)} />
+      )}
+      <SetupCustomers />
+    </>
+  );
+}

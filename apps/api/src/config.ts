@@ -11,6 +11,8 @@ const schema = z.object({
     }, 'APP_ORIGIN debe ser un origen HTTP(S) sin ruta.')
     .default('http://127.0.0.1:5173'),
   ATTACHMENT_DIR: z.string().min(1).default('./data/attachments'),
+  SESSION_MAX_MINUTES: z.coerce.number().int().min(5).max(1440).default(480),
+  SESSION_IDLE_MINUTES: z.coerce.number().int().min(1).max(1440).default(30),
   ATTACHMENT_MAX_BYTES: z.coerce
     .number()
     .int()
@@ -33,6 +35,8 @@ const schema = z.object({
   SMTP_CA_FILE: z.string().optional(),
 });
 export const config = schema.parse(process.env);
+if (config.SESSION_IDLE_MINUTES > config.SESSION_MAX_MINUTES)
+  throw new Error('SESSION_IDLE_MINUTES no puede superar SESSION_MAX_MINUTES.');
 if (config.NODE_ENV === 'production' && config.MAIL_MODE === 'file')
   throw new Error('El buzón local está deshabilitado en producción.');
 if (
