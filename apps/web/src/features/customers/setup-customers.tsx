@@ -31,6 +31,7 @@ export function CreateCustomer({ onDirtyChange }: { onDirtyChange?: (dirty: bool
       <h2>Registrar cliente</h2>
       <form
         className="comment-form"
+        onChangeCapture={() => onDirtyChange?.(true)}
         onSubmit={(e) => {
           e.preventDefault();
           create.mutate();

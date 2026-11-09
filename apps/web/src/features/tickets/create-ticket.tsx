@@ -55,6 +55,7 @@ export function CreateTicket({ onDirtyChange }: { onDirtyChange?: (dirty: boolea
       <h2>Nueva solicitud</h2>
       <form
         className="comment-form"
+        onChangeCapture={() => onDirtyChange?.(true)}
         onSubmit={(e) => {
           e.preventDefault();
           create.mutate();
