@@ -67,6 +67,7 @@ test('ventanas, búsqueda global y contexto de tickets', async ({ page }) => {
   const backWarning = page.getByRole('dialog', { name: 'Cambios sin guardar' });
   await expect(backWarning).toBeVisible();
   await backWarning.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(backWarning).toBeHidden();
   await expect(drawer.getByLabel('Modificar prioridad')).toHaveValue('alta');
   await page.keyboard.press('Escape');
   await expect(drawer.getByText('¿Descartar los cambios sin guardar?')).toBeVisible();
