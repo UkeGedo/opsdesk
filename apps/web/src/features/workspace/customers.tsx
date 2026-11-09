@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { EditCustomer } from '../customers/edit-customer';
 import { useSession } from '../../app/security';
 import { SetupCustomers } from '../customers/setup-customers';
-import { type Customer, type List, ErrorBox } from './shared';
+import { type Customer, type List, ErrorBox, LoadingRows } from './shared';
 export function Customers() {
   const { request, session } = useSession();
   const [search, setSearch] = useState('');
@@ -50,9 +50,7 @@ export function Customers() {
           </label>
         </div>
         {query.isPending ? (
-          <div className="work-empty" role="status">
-            Cargando clientes…
-          </div>
+          <LoadingRows label="Cargando clientes…" />
         ) : query.error ? (
           <ErrorBox error={query.error} />
         ) : query.data?.data.length ? (

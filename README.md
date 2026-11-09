@@ -12,7 +12,7 @@ OpsDesk es una aplicación de soporte y operaciones para registrar solicitudes, 
 - Indicadores sobre datos visibles, filtros de fecha y exportación CSV con protección ante fórmulas.
 - Roles, sesiones, CSRF, límites de entrada, auditoría y control de concurrencia e idempotencia.
 
-La captura anterior procede de una base ficticia local. La [captura de inventario](docs/assets/inventario-demo.png) muestra el mismo entorno. No hay una demostración pública desplegada.
+Las capturas muestran una versión anterior de la interfaz con datos ficticios locales; están pendientes de actualizar al diseño actual. La [captura de inventario](docs/assets/inventario-demo.png) muestra el mismo entorno. No hay una demostración pública desplegada.
 
 ## Stack y arquitectura
 
@@ -28,6 +28,8 @@ scripts/              Rotación de copias y pruebas
 ```
 
 La [arquitectura](docs/architecture/overview.md), las [decisiones](docs/architecture/decisions.md) y la [guía de módulos](docs/architecture/module-guide.md) describen la organización y sus límites.
+
+El [sistema visual](docs/architecture/design-system.md) documenta los temas, los componentes y el alcance de las verificaciones de accesibilidad.
 
 ## Requisitos y ejecución local
 

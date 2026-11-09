@@ -56,17 +56,24 @@ export function TicketReport() {
     }
   }
   return (
-    <section className="work-section">
-      <h2>Indicadores de tickets</h2>
-      <p>Período según fecha de creación, en UTC; el final se incluye.</p>
-      <label>
-        Desde
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-      </label>
-      <label>
-        Hasta
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-      </label>
+    <section className="work-section report-section">
+      <div className="report-heading">
+        <div>
+          <div className="work-overline">ANÁLISIS</div>
+          <h2>Indicadores de tickets</h2>
+          <p>Período según fecha de creación, en UTC; el final se incluye.</p>
+        </div>
+      </div>
+      <div className="report-controls">
+        <label>
+          Desde
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </label>
+        <label>
+          Hasta
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </label>
+      </div>
       {from && to && from > to ? (
         <p role="alert">La fecha inicial debe ser anterior o igual a la final.</p>
       ) : query.isPending ? (
@@ -76,13 +83,13 @@ export function TicketReport() {
       ) : (
         query.data && (
           <>
-            <p>
+            <p className="report-summary">
               {query.data.data.total} tickets · {query.data.data.unassigned} sin asignar ·{' '}
               {query.data.data.averageResolutionHours === null
                 ? 'Sin tiempo de resolución calculable'
                 : `${query.data.data.averageResolutionHours.toFixed(1)} horas de resolución promedio`}
             </p>
-            <p>
+            <p className="report-summary">
               {query.data.data.resolved} tickets resueltos en el período ·{' '}
               {query.data.data.reopened} reaperturas en el período.
             </p>
@@ -112,17 +119,20 @@ export function TicketReport() {
                       <XAxis dataKey="day" />
                       <YAxis allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="count" name="Tickets" fill="#4d6bea" />
+                      <Bar dataKey="count" name="Tickets" fill="var(--chart-accent)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <ul>
-                  {query.data.data.byDay.map((x) => (
-                    <li key={x.day}>
-                      {x.day}: {x.count}
-                    </li>
-                  ))}
-                </ul>
+                <details className="report-data">
+                  <summary>Ver datos de la gráfica</summary>
+                  <ul>
+                    {query.data.data.byDay.map((x) => (
+                      <li key={x.day}>
+                        {x.day}: {x.count}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               </>
             ) : (
               <p>Sin tickets en este período.</p>

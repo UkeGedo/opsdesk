@@ -82,7 +82,9 @@ test('cliente crea, supervisor asigna, técnico resuelve y cliente consulta', as
   try {
     await customer.page.goto('/tickets');
     await customer.page.getByLabel('Categoría').selectOption({ label: 'Conectividad' });
-    await customer.page.getByLabel('Asunto').fill('Prueba integral de conectividad');
+    await customer.page
+      .getByLabel('Asunto', { exact: true })
+      .fill('Prueba integral de conectividad');
     await customer.page.getByLabel('Descripción').fill('No hay conexión en el equipo.');
     await customer.page.getByRole('button', { name: 'Crear ticket' }).click();
     await expect(customer.page).toHaveURL(/\/tickets\/[a-f0-9-]+$/);

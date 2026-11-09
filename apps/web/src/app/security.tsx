@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { ThemeToggle } from './theme';
 
 type User = {
   id: string;
@@ -107,7 +108,10 @@ function Shell({
         <Link to="/" className="security-brand">
           ops<span>desk</span>
         </Link>
-        <Link to="/">Volver al inicio</Link>
+        <div className="security-top-actions">
+          <ThemeToggle />
+          <Link to="/">Volver al inicio</Link>
+        </div>
       </div>
       <div className="security-card">
         <div className="security-kicker">OPSDESK · ACCESO SEGURO</div>

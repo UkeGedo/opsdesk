@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Paginated, CustomerRecord, TicketStatus } from '@opsdesk/shared/contracts';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useSession } from '../../app/security';
 export type Ticket = {
   id: string;
@@ -69,55 +70,144 @@ export function ErrorBox({ error }: { error: unknown }) {
     </div>
   );
 }
-export function useTickets(query = '', page = 1, status = '', assignedTo = '') {
+export function LoadingRows({ label }: { label: string }) {
+  return (
+    <div className="loading-rows" role="status">
+      <span className="sr-only">{label}</span>
+      <span aria-hidden="true" />
+      <span aria-hidden="true" />
+      <span aria-hidden="true" />
+    </div>
+  );
+}
+export function useTickets(
+  query = '',
+  page = 1,
+  status = '',
+  assignedTo = '',
+  sort = 'createdAt',
+  order = 'desc',
+) {
   const { request } = useSession();
   return useQuery({
-    queryKey: ['tickets', query, page, status, assignedTo],
+    queryKey: ['tickets', query, page, status, assignedTo, sort, order],
     queryFn: async () =>
       (await request(
-        `/tickets?limit=20&sort=createdAt&order=desc&page=${page}${query ? '&q=' + encodeURIComponent(query) : ''}${status ? '&status=' + encodeURIComponent(status) : ''}${assignedTo ? '&assignedTo=' + encodeURIComponent(assignedTo) : ''}`,
+        `/tickets?limit=20&sort=${encodeURIComponent(sort)}&order=${encodeURIComponent(order)}&page=${page}${query ? '&q=' + encodeURIComponent(query) : ''}${status ? '&status=' + encodeURIComponent(status) : ''}${assignedTo ? '&assignedTo=' + encodeURIComponent(assignedTo) : ''}`,
       )) as List<Ticket>,
   });
 }
-export function TicketTable({ items }: { items: Ticket[] }) {
+export function TicketTable({
+  items,
+  compact = false,
+  selectable = false,
+  columns = { status: true, priority: true, updated: true },
+}: {
+  items: Ticket[];
+  compact?: boolean;
+  selectable?: boolean;
+  columns?: { status: boolean; priority: boolean; updated: boolean };
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [message, setMessage] = useState('');
+  const visibleSelected = items.filter((item) => selected.includes(item.id));
+  async function copySelection() {
+    try {
+      await navigator.clipboard.writeText(
+        visibleSelected.map((item) => `#${String(item.ticketNumber).padStart(4, '0')}`).join(', '),
+      );
+      setMessage('Identificadores copiados.');
+    } catch {
+      setMessage('No se pudieron copiar los identificadores.');
+    }
+  }
   return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Ticket</th>
-            <th>Asunto</th>
-            <th>Estado</th>
-            <th>Prioridad</th>
-            <th>Actualizado</th>
-            <th>
-              <span className="sr-only">Detalle</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((t) => (
-            <tr key={t.id}>
-              <td className="ticket-id">#{String(t.ticketNumber).padStart(4, '0')}</td>
-              <td>
-                <Link className="table-title" to={`/tickets/${t.id}`}>
-                  {t.title}
-                </Link>
-              </td>
-              <td>
-                <span className="work-badge">{labels[t.status] || t.status}</span>
-              </td>
-              <td>{labels[t.priority] || t.priority}</td>
-              <td>{date(t.updatedAt)}</td>
-              <td>
-                <Link to={`/tickets/${t.id}`} aria-label={`Ver ticket ${t.ticketNumber}`}>
-                  <ArrowRight size={17} />
-                </Link>
-              </td>
+    <>
+      {selectable && visibleSelected.length > 0 && (
+        <div className="selection-bar">
+          <span>{visibleSelected.length} seleccionados en esta página</span>
+          <button type="button" onClick={() => void copySelection()}>
+            Copiar identificadores
+          </button>
+          <span role="status">{message}</span>
+        </div>
+      )}
+      <div
+        className={`table-wrap ${compact ? 'table-compact' : ''}`}
+        role="region"
+        aria-label="Tabla de tickets"
+        tabIndex={0}
+      >
+        <table>
+          <thead>
+            <tr>
+              {selectable && (
+                <th>
+                  <input
+                    type="checkbox"
+                    aria-label="Seleccionar todos los tickets de esta página"
+                    checked={items.length > 0 && visibleSelected.length === items.length}
+                    onChange={(e) => {
+                      setMessage('');
+                      setSelected(e.target.checked ? items.map((item) => item.id) : []);
+                    }}
+                  />
+                </th>
+              )}
+              <th>Ticket</th>
+              <th>Asunto</th>
+              {columns.status && <th>Estado</th>}
+              {columns.priority && <th>Prioridad</th>}
+              {columns.updated && <th>Actualizado</th>}
+              <th>
+                <span className="sr-only">Detalle</span>
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {items.map((t) => (
+              <tr key={t.id}>
+                {selectable && (
+                  <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`Seleccionar ticket ${t.ticketNumber}`}
+                      checked={selected.includes(t.id)}
+                      onChange={(e) => {
+                        setMessage('');
+                        const checked = e.target.checked;
+                        setSelected((current) =>
+                          checked ? [...current, t.id] : current.filter((id) => id !== t.id),
+                        );
+                      }}
+                    />
+                  </td>
+                )}
+                <td className="ticket-id">#{String(t.ticketNumber).padStart(4, '0')}</td>
+                <td>
+                  <Link className="table-title" to={`/tickets/${t.id}`}>
+                    {t.title}
+                  </Link>
+                </td>
+                {columns.status && (
+                  <td>
+                    <span className="work-badge" data-status={t.status}>
+                      {labels[t.status] || t.status}
+                    </span>
+                  </td>
+                )}
+                {columns.priority && <td>{labels[t.priority] || t.priority}</td>}
+                {columns.updated && <td>{date(t.updatedAt)}</td>}
+                <td>
+                  <Link to={`/tickets/${t.id}`} aria-label={`Ver ticket ${t.ticketNumber}`}>
+                    <ArrowRight size={17} />
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

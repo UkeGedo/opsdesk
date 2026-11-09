@@ -43,7 +43,7 @@ export function CreateTicket() {
   });
   if (!canCreate) return null;
   return (
-    <section className="work-section">
+    <section className="work-section" id="nueva-solicitud">
       <h2>Nueva solicitud</h2>
       <form
         className="comment-form"

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import {
@@ -9,15 +9,15 @@ import {
   ClipboardList,
   Layers3,
   LifeBuoy,
-  Moon,
   Package,
   ShieldCheck,
-  Sun,
   UsersRound,
 } from 'lucide-react';
 import './styles.css';
+import './design-system.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider, Login, Recovery, Reset, Profile, Denied } from './app/security';
+import { ThemeProvider, ThemeToggle } from './app/theme';
 
 const Workspace = lazy(() =>
   import('./features/workspace/layout').then((m) => ({ default: m.Workspace })),
@@ -52,22 +52,6 @@ function Logo() {
     </Link>
   );
 }
-function Theme() {
-  const [dark, setDark] = useState(() => localStorage.getItem('opsdesk-theme') === 'dark');
-  useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    localStorage.setItem('opsdesk-theme', dark ? 'dark' : 'light');
-  }, [dark]);
-  return (
-    <button
-      className="theme"
-      onClick={() => setDark(!dark)}
-      aria-label={dark ? 'Activar tema claro' : 'Activar tema oscuro'}
-    >
-      {dark ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
-  );
-}
 function Header() {
   return (
     <header className="header">
@@ -79,7 +63,7 @@ function Header() {
           <a href="/#fundamentos">Fundamentos</a>
         </nav>
         <div className="header-actions">
-          <Theme />
+          <ThemeToggle className="theme" />
           <Link className="signin-link" to="/acceso">
             Ingresar
           </Link>
@@ -378,35 +362,37 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <SessionProvider>
-          <Suspense
-            fallback={
-              <main className="work-empty" role="status">
-                Cargando sección…
-              </main>
-            }
-          >
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route element={<Workspace />}>
-                <Route path="/panel" element={<Dashboard />} />
-                <Route path="/tickets" element={<Tickets />} />
-                <Route path="/tickets/:id" element={<TicketDetail />} />
-                <Route path="/clientes" element={<Customers />} />
-                <Route path="/inventario" element={<Inventory />} />
-                <Route path="/tareas" element={<Tasks />} />
-              </Route>
-              <Route path="/acceso" element={<Login />} />
-              <Route path="/recuperar" element={<Recovery />} />
-              <Route path="/restablecer" element={<Reset />} />
-              <Route path="/perfil" element={<Profile />} />
-              <Route path="/denegado" element={<Denied />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </SessionProvider>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <SessionProvider>
+            <Suspense
+              fallback={
+                <main className="work-empty" role="status">
+                  Cargando sección…
+                </main>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route element={<Workspace />}>
+                  <Route path="/panel" element={<Dashboard />} />
+                  <Route path="/tickets" element={<Tickets />} />
+                  <Route path="/tickets/:id" element={<TicketDetail />} />
+                  <Route path="/clientes" element={<Customers />} />
+                  <Route path="/inventario" element={<Inventory />} />
+                  <Route path="/tareas" element={<Tasks />} />
+                </Route>
+                <Route path="/acceso" element={<Login />} />
+                <Route path="/recuperar" element={<Recovery />} />
+                <Route path="/restablecer" element={<Reset />} />
+                <Route path="/perfil" element={<Profile />} />
+                <Route path="/denegado" element={<Denied />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </SessionProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );

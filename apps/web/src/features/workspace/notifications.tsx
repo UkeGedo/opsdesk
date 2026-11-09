@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSession } from '../../app/security';
 type Notice = {
@@ -15,6 +15,26 @@ export function Notifications() {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (event.target instanceof Node && !menuRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [open]);
   const query = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => (await request('/notifications')) as { data: Notice[] },
@@ -74,18 +94,20 @@ export function Notifications() {
     (alerts.data?.data.filter((item) => !item.readAt).length ?? 0) +
     (taskAlerts.data?.data.filter((item) => !item.readAt).length ?? 0);
   return (
-    <div className="notice-menu">
+    <div className="notice-menu" ref={menuRef}>
       <button
         className="notice-toggle"
+        ref={triggerRef}
         onClick={() => setOpen(!open)}
         aria-label={unread ? `Notificaciones, ${unread} sin leer` : 'Notificaciones'}
         aria-expanded={open}
+        aria-controls="notice-panel"
       >
         <Bell size={19} />
         {unread > 0 && <span aria-hidden="true" />}
       </button>
       {open && (
-        <section className="notice-panel" aria-label="Notificaciones">
+        <section id="notice-panel" className="notice-panel" aria-label="Notificaciones">
           <h2>Notificaciones</h2>
           {unread > 0 && (
             <button type="button" disabled={markAll.isPending} onClick={() => markAll.mutate()}>
