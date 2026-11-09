@@ -16,15 +16,15 @@ Se inspeccionaron visualmente el panel y el inventario en navegador y sus captur
 
 ## Hallazgos y trabajo externo pendiente
 
-| Prioridad                | Pendiente                           | Impacto y acción                                                                                                                         |
-| ------------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Alta antes de producción | HTTPS, dominio y despliegue real    | Configurar un proxy TLS y un servidor seguro; aquí solo se probó Compose en loopback.                                                    |
-| Alta antes de producción | Copias operativas                   | Programar y supervisar copias cifradas externas de base y adjuntos y ensayar restauraciones periódicas en el destino real.               |
-| Alta antes de producción | Revisión de seguridad independiente | Revisar la [matriz ASVS parcial](security-asvs.md), MFA, secretos, permisos y el entorno final; no hay certificación ASVS.               |
-| Media                    | Accesibilidad manual                | Evaluar lector de pantalla, zoom, navegación completa y usuarios reales; axe automatizado no demuestra conformidad WCAG.                 |
-| Media                    | CI y notificaciones reales          | El flujo de GitHub Actions está configurado, pero no se ha observado una ejecución alojada; falta configurar y probar un proveedor SMTP. |
-| Media                    | Rendimiento                         | Evaluar con datos y carga representativos; la reducción del bundle no es una prueba de capacidad.                                        |
-| Media                    | Gestión de auditoría                | Definir retención, acceso, revisión y almacenamiento centralizado de registros.                                                          |
+| Prioridad                | Pendiente                           | Impacto y acción                                                                                                           |
+| ------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Alta antes de producción | HTTPS, dominio y despliegue real    | Configurar un proxy TLS y un servidor seguro; aquí solo se probó Compose en loopback.                                      |
+| Alta antes de producción | Copias operativas                   | Programar y supervisar copias cifradas externas de base y adjuntos y ensayar restauraciones periódicas en el destino real. |
+| Alta antes de producción | Revisión de seguridad independiente | Revisar la [matriz ASVS parcial](security-asvs.md), MFA, secretos, permisos y el entorno final; no hay certificación ASVS. |
+| Media                    | Accesibilidad manual                | Evaluar lector de pantalla, zoom, navegación completa y usuarios reales; axe automatizado no demuestra conformidad WCAG.   |
+| Media                    | CI y notificaciones reales          | GitHub Actions pasó para el commit `a0dd73c`; falta configurar y probar un proveedor SMTP real.                            |
+| Media                    | Rendimiento                         | Evaluar con datos y carga representativos; la reducción del bundle no es una prueba de capacidad.                          |
+| Media                    | Gestión de auditoría                | Definir retención, acceso, revisión y almacenamiento centralizado de registros.                                            |
 
 La demostración utiliza datos y credenciales ficticios. No se debe utilizar la semilla en producción. Véanse [despliegue](deployment.md), [copias](backups.md), [pruebas](testing.md) y [guion de demo](../portfolio/demo.md).
 
