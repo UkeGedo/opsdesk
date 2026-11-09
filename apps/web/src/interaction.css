@@ -1,0 +1,229 @@
+.command-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.command-trigger kbd {
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.work-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  overflow-x: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.work-tabs > div {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+}
+.work-tabs > div.active {
+  border-color: var(--teal);
+}
+.work-tabs button {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  padding: 10px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.work-tabs .active button:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+.work-tabs .work-tab-close {
+  font-size: 18px;
+  padding: 4px 7px;
+}
+.surface {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: min(620px, calc(100% - 32px));
+  max-height: min(85vh, 900px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  padding: 24px;
+  box-shadow: var(--shadow-popover);
+}
+.surface::backdrop {
+  background: rgb(5 22 31 / 58%);
+}
+.surface-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0 0 0 auto;
+  width: min(var(--drawer-width, 520px), 100%);
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+}
+.surface-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+}
+.surface-header h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.drawer-width {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+.drawer-width input {
+  width: 100px;
+}
+.surface-header button {
+  border: 1px solid var(--border);
+  background: var(--panel-muted);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 22px;
+  width: 40px;
+  height: 40px;
+}
+.surface .work-section {
+  padding: 0;
+  box-shadow: none;
+  border: 0;
+  background: transparent;
+}
+.surface .work-section > h2 {
+  display: none;
+}
+.surface-dirty {
+  color: var(--text);
+  background: var(--brand-soft);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+}
+.surface-confirm {
+  padding: 10px 0;
+}
+.surface .comment-form {
+  margin: 20px 0;
+}
+.surface-link {
+  display: inline-block;
+  margin: 10px 0;
+  font-weight: 700;
+  color: var(--teal);
+}
+.command-search {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+.command-search input {
+  width: 100%;
+  min-height: var(--control-height);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+.command-group {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+}
+.command-group h3 {
+  margin: 0 0 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.command-group a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-decoration: none;
+}
+.command-group a:hover,
+.command-group a:focus-visible {
+  background: var(--panel-muted);
+}
+.quick-view {
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.customer-view {
+  border: 0;
+  padding: 0;
+  color: var(--text);
+  background: none;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.customer-view:hover {
+  color: var(--teal);
+  text-decoration: underline;
+}
+.dashboard-widget {
+  min-width: 0;
+}
+.widget-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.widget-controls span {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 18px;
+}
+.widget-controls button {
+  border: 0;
+  background: transparent;
+  color: var(--teal);
+  cursor: pointer;
+  font-size: 11px;
+}
+@media (max-width: 800px) {
+  .drawer-width {
+    display: none;
+  }
+  .command-trigger kbd {
+    display: none;
+  }
+  .work-tabs {
+    padding: 0 12px;
+  }
+}

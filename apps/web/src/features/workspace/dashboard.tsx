@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, ClipboardList, Plus } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { RecentActivity } from '../dashboard/recent-activity';
 import { useSession } from '../../app/security';
@@ -10,6 +10,23 @@ const TicketReport = lazy(() =>
 );
 export function Dashboard() {
   const { session, request } = useSession();
+  const [activityFirst, setActivityFirst] = useState(() => {
+    try {
+      return localStorage.getItem('opsdesk-panel-order') === 'activity-first';
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'opsdesk-panel-order',
+        activityFirst ? 'activity-first' : 'report-first',
+      );
+    } catch {
+      /* Preferencia opcional */
+    }
+  }, [activityFirst]);
   const query = useTickets();
   const summary = useQuery({
     queryKey: ['reports', 'summary'],
@@ -78,10 +95,46 @@ export function Dashboard() {
           </div>
           {summary.isError && <p role="alert">No se pudieron cargar los indicadores.</p>}
           <div className="dashboard-overview">
-            <Suspense fallback={<p role="status">Cargando indicadores…</p>}>
-              <TicketReport />
-            </Suspense>
-            <RecentActivity />
+            {(activityFirst ? ['activity', 'report'] : ['report', 'activity']).map(
+              (item, index) => (
+                <div
+                  className="dashboard-widget"
+                  key={item}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const dragged = event.dataTransfer.getData('text/plain');
+                    if ((dragged === 'activity' || dragged === 'report') && dragged !== item)
+                      setActivityFirst(dragged === 'activity');
+                  }}
+                >
+                  <div className="widget-controls">
+                    <span
+                      draggable
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', item);
+                      }}
+                      aria-hidden="true"
+                      title="Arrastrar para reorganizar"
+                    >
+                      ⠿
+                    </span>
+                    <button type="button" onClick={() => setActivityFirst((value) => !value)}>
+                      Mover {item === 'activity' ? 'actividad' : 'indicadores'}{' '}
+                      {index === 0 ? 'después' : 'antes'}
+                    </button>
+                  </div>
+                  {item === 'report' ? (
+                    <Suspense fallback={<p role="status">Cargando indicadores…</p>}>
+                      <TicketReport />
+                    </Suspense>
+                  ) : (
+                    <RecentActivity />
+                  )}
+                </div>
+              ),
+            )}
           </div>
           <section className="work-section">
             <div className="section-bar">

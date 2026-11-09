@@ -31,6 +31,8 @@ La [arquitectura](docs/architecture/overview.md), las [decisiones](docs/architec
 
 El [sistema visual](docs/architecture/design-system.md) documenta los temas, los componentes y el alcance de las verificaciones de accesibilidad.
 
+La guía del [espacio interactivo](docs/operations/interactive-workspace.md) describe los atajos, las ventanas y sus límites actuales.
+
 ## Requisitos y ejecución local
 
 Node.js 26.13.0 y pnpm 11.25.0 son las versiones fijadas en CI e imágenes. Las dependencias nativas deben instalarse para la versión de Node y el sistema operativo de destino. Docker es opcional para el desarrollo local. Desde la raíz:

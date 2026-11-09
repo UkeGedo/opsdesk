@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/security';
-export function CreateTicket() {
+export function CreateTicket({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void } = {}) {
   const { request, session } = useSession();
   const cache = useQueryClient();
   const navigate = useNavigate();
@@ -14,6 +14,9 @@ export function CreateTicket() {
     [title, setTitle] = useState(''),
     [description, setDescription] = useState(''),
     [priority, setPriority] = useState('media');
+  useEffect(() => {
+    onDirtyChange?.(!!(customerId || categoryId || title || description || priority !== 'media'));
+  }, [customerId, categoryId, title, description, priority, onDirtyChange]);
   const customers = useQuery({
     queryKey: ['customers', 'select', customerSearch],
     queryFn: async () =>

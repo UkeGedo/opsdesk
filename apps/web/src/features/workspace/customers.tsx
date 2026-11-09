@@ -1,16 +1,29 @@
 import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { EditCustomer } from '../customers/edit-customer';
 import { useSession } from '../../app/security';
-import { SetupCustomers } from '../customers/setup-customers';
+import { CreateCustomer, SetupCustomers } from '../customers/setup-customers';
 import { type Customer, type List, ErrorBox, LoadingRows } from './shared';
+import { Surface } from './surface';
 export function Customers() {
   const { request, session } = useSession();
-  const [search, setSearch] = useState('');
+  const location = useLocation();
+  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('q') ?? '');
+  useEffect(() => {
+    setSearch(new URLSearchParams(location.search).get('q') ?? '');
+  }, [location.search]);
+  useEffect(() => {
+    if (location.hash === '#registrar-cliente')
+      document.getElementById('registrar-cliente')?.scrollIntoView();
+  }, [location.hash]);
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Customer | null>(null);
+  const [viewing, setViewing] = useState<Customer | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDirty, setCreateDirty] = useState(false);
   const query = useQuery({
     queryKey: ['customers', search, page],
     queryFn: async () =>
@@ -29,6 +42,25 @@ export function Customers() {
           <h1>Clientes</h1>
           <p>La información de contacto de las organizaciones atendidas.</p>
         </div>
+        {session?.user.role === 'administrador' && (
+          <button
+            type="button"
+            className="security-button"
+            onClick={() => {
+              if (
+                createDirty &&
+                !window.confirm(
+                  'Hay un cliente sin guardar. ¿Descartar los cambios y abrir una nueva ventana?',
+                )
+              )
+                return;
+              setCreateDirty(false);
+              setCreateOpen(true);
+            }}
+          >
+            Registrar cliente en ventana
+          </button>
+        )}
       </div>
       <section className="work-section">
         <div className="section-bar">
@@ -68,7 +100,11 @@ export function Customers() {
               <tbody>
                 {query.data.data.map((c) => (
                   <tr key={c.id}>
-                    <td className="table-title">{c.name}</td>
+                    <td className="table-title">
+                      <button type="button" className="customer-view" onClick={() => setViewing(c)}>
+                        {c.name}
+                      </button>
+                    </td>
                     <td>{c.email || '—'}</td>
                     <td>{c.phone || '—'}</td>
                     <td>
@@ -78,7 +114,10 @@ export function Customers() {
                       <td>
                         <button
                           type="button"
-                          onClick={() => setEditing(c)}
+                          onClick={() => {
+                            setDirty(false);
+                            setEditing(c);
+                          }}
                           aria-label={`Editar ${c.name}`}
                         >
                           Editar
@@ -116,9 +155,31 @@ export function Customers() {
         )}
       </section>
       {editing && (
-        <EditCustomer key={editing.id} customer={editing} onClose={() => setEditing(null)} />
+        <Surface title="Editar cliente" dirty={dirty} onClose={() => setEditing(null)}>
+          <EditCustomer
+            key={editing.id}
+            customer={editing}
+            onClose={() => setEditing(null)}
+            onSaved={() => setEditing(null)}
+            onDirtyChange={setDirty}
+            hideCancel
+          />
+        </Surface>
       )}
-      <SetupCustomers />
+      {viewing && (
+        <Surface title="Ficha de cliente" drawer onClose={() => setViewing(null)}>
+          <h3>{viewing.name}</h3>
+          <p>Correo: {viewing.email || 'No registrado'}</p>
+          <p>Teléfono: {viewing.phone || 'No registrado'}</p>
+          <p>Estado: {viewing.status}</p>
+        </Surface>
+      )}
+      <SetupCustomers hideCustomer={createOpen} onDirtyChange={setCreateDirty} />
+      {createOpen && (
+        <Surface title="Registrar cliente" dirty={createDirty} onClose={() => setCreateOpen(false)}>
+          <CreateCustomer onDirtyChange={setCreateDirty} />
+        </Surface>
+      )}
     </>
   );
 }

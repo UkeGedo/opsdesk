@@ -39,7 +39,7 @@ jobs:
           echo "E2E_BASE_URL=http://127.0.0.1:8080" >> "$GITHUB_ENV"
       - run: docker compose run --rm -e NODE_ENV=development -e SEED_PASSWORD api node dist/seed.js
       - run: docker compose up -d --wait
-      - run: pnpm --filter @opsdesk/web exec playwright test e2e/phase5.spec.ts e2e/accessibility-work.spec.ts --workers=1
+      - run: pnpm --filter @opsdesk/web exec playwright test e2e/phase5.spec.ts e2e/accessibility-work.spec.ts e2e/interaction-work.spec.ts --workers=1
       - run: pnpm --filter @opsdesk/web test:e2e --grep 'sesión real'
       - run: pnpm --filter @opsdesk/web test:e2e --grep 'sesión vencida'
       - run: curl --fail http://127.0.0.1:8080/api/v1/health && curl --fail http://127.0.0.1:8080/

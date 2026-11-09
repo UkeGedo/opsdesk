@@ -1,24 +1,78 @@
 import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { CreateTicket } from '../tickets/create-ticket';
 import { useSession } from '../../app/security';
 import { ErrorBox, labels, LoadingRows, TicketTable, useTickets } from './shared';
+import { TicketPreview } from './ticket-preview';
+import { Surface } from './surface';
 export function Tickets() {
   const { request, session } = useSession();
   const { hash } = useLocation();
+  const [params, setParams] = useSearchParams();
   useEffect(() => {
     if (hash === '#nueva-solicitud') document.getElementById('nueva-solicitud')?.scrollIntoView();
   }, [hash]);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1),
-    [status, setStatus] = useState(''),
-    [assignedTo, setAssignedTo] = useState('');
-  const [sort, setSort] = useState('createdAt');
-  const [order, setOrder] = useState('desc');
-  const [compact, setCompact] = useState(false);
-  const [columns, setColumns] = useState({ status: true, priority: true, updated: true });
+  const [search, setSearch] = useState(() => params.get('q') ?? '');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDirty, setCreateDirty] = useState(false);
+  const [page, setPage] = useState(() =>
+      Math.max(1, Math.min(10000, Number(params.get('page')) || 1)),
+    ),
+    [status, setStatus] = useState(() => params.get('status') ?? ''),
+    [assignedTo, setAssignedTo] = useState(() => params.get('assignedTo') ?? '');
+  const [sort, setSort] = useState(() =>
+    ['createdAt', 'ticketNumber', 'title', 'priority'].includes(params.get('sort') ?? '')
+      ? params.get('sort')!
+      : 'createdAt',
+  );
+  const [order, setOrder] = useState(() => (params.get('order') === 'asc' ? 'asc' : 'desc'));
+  const [compact, setCompact] = useState(() => {
+    try {
+      return localStorage.getItem('opsdesk-ticket-density') === 'compact';
+    } catch {
+      return false;
+    }
+  });
+  const [columns, setColumns] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('opsdesk-ticket-columns') ?? '{}') as Record<
+        string,
+        unknown
+      >;
+      return {
+        status: saved.status !== false,
+        priority: saved.priority !== false,
+        updated: saved.updated !== false,
+      };
+    } catch {
+      return { status: true, priority: true, updated: true };
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('opsdesk-ticket-density', compact ? 'compact' : 'comfortable');
+      localStorage.setItem('opsdesk-ticket-columns', JSON.stringify(columns));
+    } catch {
+      /* preferencias opcionales */
+    }
+  }, [compact, columns]);
+  useEffect(() => {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of Object.entries({
+      q: search,
+      page: page > 1 ? String(page) : '',
+      status,
+      assignedTo,
+      sort: sort === 'createdAt' ? '' : sort,
+      order: order === 'desc' ? '' : order,
+    })) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
+    if (next.toString() !== params.toString()) setParams(next, { replace: true });
+  }, [search, page, status, assignedTo, sort, order, params, setParams]);
   const manager = ['administrador', 'supervisor'].includes(session?.user.role ?? '');
   const technicians = useQuery({
     queryKey: ['technicians'],
@@ -35,6 +89,25 @@ export function Tickets() {
           <h1>Tickets</h1>
           <p>Consulta y da seguimiento a las solicitudes disponibles.</p>
         </div>
+        {['administrador', 'supervisor', 'cliente'].includes(session?.user.role ?? '') && (
+          <button
+            type="button"
+            className="security-button"
+            onClick={() => {
+              if (
+                createDirty &&
+                !window.confirm(
+                  'Hay una solicitud sin guardar. ¿Descartar sus cambios y abrir una nueva ventana?',
+                )
+              )
+                return;
+              setCreateDirty(false);
+              setCreateOpen(true);
+            }}
+          >
+            Nueva solicitud en ventana
+          </button>
+        )}
       </div>
       <section className="work-section">
         <div className="section-bar">
@@ -164,7 +237,19 @@ export function Tickets() {
         ) : query.error ? (
           <ErrorBox error={query.error} />
         ) : query.data?.data.length ? (
-          <TicketTable items={query.data.data} compact={compact} selectable columns={columns} />
+          <TicketTable
+            items={query.data.data}
+            compact={compact}
+            selectable
+            columns={columns}
+            onPreview={(ticket) =>
+              setParams((current) => {
+                const next = new URLSearchParams(current);
+                next.set('ticket', ticket.id);
+                return next;
+              })
+            }
+          />
         ) : (
           <div className="work-empty">
             <strong>No hay resultados.</strong>
@@ -190,7 +275,29 @@ export function Tickets() {
           </div>
         )}
       </section>
-      <CreateTicket />
+      {createOpen ? (
+        <Surface title="Nueva solicitud" dirty={createDirty} onClose={() => setCreateOpen(false)}>
+          <CreateTicket onDirtyChange={setCreateDirty} />
+        </Surface>
+      ) : (
+        <CreateTicket onDirtyChange={setCreateDirty} />
+      )}
+      {params.get('ticket') && (
+        <TicketPreview
+          key={params.get('ticket')}
+          id={params.get('ticket')!}
+          onClose={() =>
+            setParams(
+              (current) => {
+                const next = new URLSearchParams(current);
+                next.delete('ticket');
+                return next;
+              },
+              { replace: true },
+            )
+          }
+        />
+      )}
     </>
   );
 }

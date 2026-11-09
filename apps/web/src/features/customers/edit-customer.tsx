@@ -1,15 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CustomerRecord } from '@opsdesk/shared/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
 type Customer = CustomerRecord;
-export function EditCustomer({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+export function EditCustomer({
+  customer,
+  onClose,
+  onSaved,
+  onDirtyChange,
+  hideCancel = false,
+}: {
+  customer: Customer;
+  onClose: () => void;
+  onSaved?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  hideCancel?: boolean;
+}) {
   const { request } = useSession();
   const cache = useQueryClient();
   const [name, setName] = useState(customer.name),
     [email, setEmail] = useState(customer.email ?? ''),
     [phone, setPhone] = useState(customer.phone ?? ''),
     [status, setStatus] = useState(customer.status);
+  useEffect(() => {
+    onDirtyChange?.(
+      name !== customer.name ||
+        email !== (customer.email ?? '') ||
+        phone !== (customer.phone ?? '') ||
+        status !== customer.status,
+    );
+  }, [name, email, phone, status, customer, onDirtyChange]);
   const save = useMutation({
     mutationFn: () =>
       request(`/customers/${encodeURIComponent(customer.id)}`, 'PATCH', {
@@ -21,7 +41,7 @@ export function EditCustomer({ customer, onClose }: { customer: Customer; onClos
       }),
     onSuccess: () => {
       void cache.invalidateQueries({ queryKey: ['customers'] });
-      onClose();
+      (onSaved ?? onClose)();
     },
     onError: () => {
       void cache.invalidateQueries({ queryKey: ['customers'] });
@@ -70,9 +90,11 @@ export function EditCustomer({ customer, onClose }: { customer: Customer; onClos
         <button className="security-button" disabled={save.isPending}>
           Guardar cliente
         </button>
-        <button type="button" onClick={onClose}>
-          Cancelar
-        </button>
+        {!hideCancel && (
+          <button type="button" onClick={onClose}>
+            Cancelar
+          </button>
+        )}
       </form>
     </section>
   );

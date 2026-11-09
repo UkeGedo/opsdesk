@@ -7,6 +7,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Package,
+  Search,
   UserRound,
   UsersRound,
 } from 'lucide-react';
@@ -16,9 +17,28 @@ import { LiveUpdates } from './live-updates';
 import { useSession } from '../../app/security';
 import { Notifications } from './notifications';
 import { ThemeToggle } from '../../app/theme';
+import { CommandPalette } from './command-palette';
+import { WorkTabs } from './work-tabs';
 export function Workspace() {
   const { session, loading, setSession, request } = useSession();
   const [menu, setMenu] = useState(false);
+  const [commands, setCommands] = useState(false);
+  useEffect(() => {
+    function shortcut(event: KeyboardEvent) {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+      )
+        return;
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommands(true);
+      }
+    }
+    window.addEventListener('keydown', shortcut);
+    return () => window.removeEventListener('keydown', shortcut);
+  }, []);
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('opsdesk-sidebar') === 'collapsed';
@@ -170,6 +190,11 @@ export function Workspace() {
           <div className="work-breadcrumb">
             Espacio de trabajo <span>/</span> <strong>{title}</strong>
           </div>
+          <button type="button" className="command-trigger" onClick={() => setCommands(true)}>
+            <Search size={17} />
+            <span>Buscar</span>
+            <kbd aria-hidden="true">Ctrl K</kbd>
+          </button>
           <Notifications />
           <ThemeToggle />
           <Link className="work-user" to="/perfil">
@@ -180,10 +205,12 @@ export function Workspace() {
             </div>
           </Link>
         </header>
+        <WorkTabs />
         <main className="work-main">
           <Outlet />
         </main>
       </div>
+      {commands && <CommandPalette onClose={() => setCommands(false)} />}
     </div>
   );
 }

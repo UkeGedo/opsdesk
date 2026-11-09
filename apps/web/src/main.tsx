@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import './styles.css';
 import './design-system.css';
+import './interaction.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider, Login, Recovery, Reset, Profile, Denied } from './app/security';
 import { ThemeProvider, ThemeToggle } from './app/theme';

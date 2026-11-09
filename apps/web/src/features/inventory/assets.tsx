@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../../app/security';
+import { useLocation } from 'react-router-dom';
 type Asset = {
   id: string;
   name: string;
@@ -11,13 +12,20 @@ type Asset = {
   updatedAt: string;
 };
 export function Assets() {
+  const location = useLocation();
   const { request, session } = useSession();
   const cache = useQueryClient();
   const manager = ['administrador', 'supervisor'].includes(session?.user.role ?? '');
   const [techSearch, setTechSearch] = useState(''),
     [locationSearch, setLocationSearch] = useState('');
   const [page, setPage] = useState(1),
-    [search, setSearch] = useState('');
+    [search, setSearch] = useState(() => new URLSearchParams(location.search).get('q') ?? '');
+  useEffect(() => {
+    setSearch(new URLSearchParams(location.search).get('q') ?? '');
+  }, [location.search]);
+  useEffect(() => {
+    if (location.hash === '#equipos') document.getElementById('equipos')?.scrollIntoView();
+  }, [location.hash]);
   const [name, setName] = useState(''),
     [serial, setSerial] = useState(''),
     [locationId, setLocation] = useState(''),
@@ -80,7 +88,7 @@ export function Assets() {
     },
   });
   return (
-    <section className="work-section">
+    <section className="work-section" id="equipos">
       <h2>Equipos identificables</h2>
       <p>
         Los números de serie son únicos y se controlan por separado de los materiales fungibles.
