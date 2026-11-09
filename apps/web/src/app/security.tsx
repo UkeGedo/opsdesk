@@ -159,7 +159,10 @@ export function Login() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema) });
+  } = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
   const clearGuard = useDirtyNavigation(isDirty && !session);
   async function submit(v: z.infer<typeof loginSchema>) {
     setMessage('');
@@ -228,7 +231,10 @@ export function Recovery() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<z.infer<typeof recoverySchema>>({ resolver: zodResolver(recoverySchema) });
+  } = useForm<z.infer<typeof recoverySchema>>({
+    resolver: zodResolver(recoverySchema),
+    defaultValues: { email: '' },
+  });
   useDirtyNavigation(isDirty && !done);
   async function submit(v: z.infer<typeof recoverySchema>) {
     try {
@@ -291,7 +297,10 @@ export function Reset() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<z.infer<typeof resetSchema>>({ resolver: zodResolver(resetSchema) });
+  } = useForm<z.infer<typeof resetSchema>>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: { newPassword: '', confirmPassword: '' },
+  });
   useDirtyNavigation(isDirty && !done);
   useEffect(() => {
     window.history.replaceState(null, '', window.location.pathname);
