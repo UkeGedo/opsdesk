@@ -41,10 +41,12 @@ test('vistas operativas: accesibilidad automática y navegación móvil', async 
         path === '/clientes'
       )
         await page.locator('main table').first().waitFor();
-      expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-        `Ancho ${width}: ${path}`,
-      ).toBe(true);
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), {
+          message: `Ancho ${width}: ${path}`,
+          timeout: 5000,
+        })
+        .toBe(true);
     }
   }
   await page.getByRole('button', { name: 'Contraer barra lateral' }).click();
